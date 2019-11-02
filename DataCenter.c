@@ -58,7 +58,7 @@
 	 //Select implementation for multiple requests handling
 	 while (1)
 	 {
-	   FD_ZERO(&readfds);
+	     FD_ZERO(&readfds);
 		 FD_SET(serverSocketFD, &readfds);
 
 		 for (i = 0; i < MAX_CLIENTS; i++)
@@ -130,8 +130,8 @@
 					//terminate string with NULL  
 					buffer[n] = '\0';
 					//handle the message
-          if(DEBUG)
-					 printf("Message received: %s \n", buffer);
+                     if(DEBUG)
+				     	 printf("Message received: %s \n", buffer);
 					//response = Message_handler(buffer, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), client_sock[i]);
 				}
 			}
@@ -146,6 +146,8 @@
  {
    
  }
+ 
+  
 
  void readFromDataStore()
  {
@@ -155,6 +157,7 @@
  void writeToDataStore()
  {
   
+	 /*DO NULL CHECK*/
  }
 
  /*TODO -  We can switch to epoll  if we get the time. What do you think? */

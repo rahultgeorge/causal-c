@@ -6,7 +6,7 @@ datacenter: datastore
 
 
 datastore:  
-	        $(CC) -c DataStore.c -o DataStore
+	        $(CC) -c -lsqlite3 DataStore.c -o DataStore
 
 
 client:   datacenter

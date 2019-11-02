@@ -1,0 +1,17 @@
+<key,version>
+
+version <timestamp,datacenter_id>
+
+
+
+TODO
+
+
+Each datacenter has a dependency list for each client
+pending_check -> Queue
+
+
+
+
+
+
