@@ -1,5 +1,12 @@
+#ifndef _DATA_STORE_H
 
 
-int commit(int opcode, void* data);
 
-int read(char* key);
+ #define DB_NAME CausalDB
+
+ /*Commits the write to the data store
+   
+ */
+ int commit(char* key, void* data);
+
+ int read(char* key);
