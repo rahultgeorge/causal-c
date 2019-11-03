@@ -2,12 +2,14 @@ CC=gcc
 
 
 datacenter: datastore
-	        $(CC) DataCenter.c  DataStore -o DataCenter
+	        $(CC) -lsqlite3 DataCenter.c  DBHandler -o DataCenter
 
 
 datastore:  
-	        $(CC) -c -lsqlite3 DataStore.c -o DataStore
+	        $(CC) -c  DBHandler.c -o DBHandler
 
+bdaemon:   
+			$(CC) -lsqlite3 DBHandler BroadcastDaemonM.c -o BroadcastDaemonM 
 
 client:   datacenter
 	      $(CC) Client.c -o Client

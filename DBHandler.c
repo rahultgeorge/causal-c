@@ -1,4 +1,4 @@
-#include "DataStore.h"
+#include "DBHandler.h"
 
 
   int commit(char* key, int client_id, void* data)
@@ -26,7 +26,7 @@
 	  return 0;
   }
 
-  int read(char* key,void* data)
+  int readFromDB(char* key,void* data)
   {
     sqlite3 *db; 
     sqlite3_stmt *stmt;

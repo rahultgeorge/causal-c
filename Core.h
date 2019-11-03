@@ -12,23 +12,34 @@
  #include <stdlib.h>
  #include <arpa/inet.h>
  #include <time.h>
- #include "DataStore.h"
+ #include <errno.h>
+ #include "DBHandler.h"
+ #include <unistd.h>
+
+
 
 
  // struct timeStamp
  // {
 
  // }
- #define PORT 60001
+ #define PORT 60002
  #define DEBUG 1
  #define DOMAIN AF_INET
  #define SOCKET_TYPE SOCK_STREAM
  #define PROTOCOL 0
  #define MAX_CLIENTS 27
  #define DEBUG 1
- // #define MESSAGE_HEADER_LENGTH 12
- // #define REGISTER_REQUEST "REG_REQUEST\0"
- // #define FILE_LIST_REQUEST "FLI_REQUEST\0"
+/*Client TAGS */
+ #define MESSAGE_HEADER_LENGTH 8
+ #define READ_REQUEST  "READ_REQ"
+ #define WRITE_REQUEST "WRIT_REQ"
+ #define WRITE_ACK     "WRIT_ACK"
+ #define WRITE_NACK    "WRIT_NCK"
+ 
+ /*  */
+ #define REP_WRITE     "REP_WRIT"
+
  // #define FILE_LOCATION_REQUEST "FLO_REQUEST\0"
  // #define CHUNK_REGISTER_REQUEST "CHU_REQUEST\0"
  // #define FILE_CHUNK_REQUEST "FCH_REQUEST\0"

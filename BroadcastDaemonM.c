@@ -2,6 +2,8 @@
    1) Send replicated writes
    2) Fault tolerance         */
 
+ #include "DBHandler.h"
+
  int main()
  {
 

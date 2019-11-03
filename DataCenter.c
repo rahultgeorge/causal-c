@@ -21,10 +21,13 @@
    assert(serverSocketFD!=0);
    if(DEBUG) printf("Data Center Socket Created\n"); 
   
-   //socket options
-   flag = setsockopt(serverSocketFD, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &on, sizeof(int));
-   assert(flag >= 0);
-
+   //socket options - Reusable address 
+   flag = setsockopt(serverSocketFD, SOL_SOCKET, SO_REUSEADDR , &on, sizeof(on));
+   assert(flag == 0);
+   //Reusable port
+   flag = setsockopt(serverSocketFD, SOL_SOCKET, SO_REUSEPORT , &on, sizeof(on));
+   assert(flag == 0);
+    
    //Server Address
    serverAddress.sin_family=DOMAIN;
    serverAddress.sin_port=htons(PORT);
@@ -44,16 +47,74 @@
  }
 
 
+ void readFromDataStore(char* key)
+ {
+   
+ }  
+
+ void writeToDataStore(char* key,char* data)
+ {
+  
+	 /*DO NULL CHECK*/
+ }
+ 
+ int messageHandler(char* request, char* clientIPAddress, int port, int socket)
+ {
+	int offset=0,keyLength,dataLength;
+	char* key,*data; 
+   	if(strncmp(request,READ_REQUEST,MESSAGE_HEADER_LENGTH)==0)
+	{ 
+		offset+=MESSAGE_HEADER_LENGTH;
+	    
+	 	memcpy(&keyLength,request+offset,sizeof(int));
+	    offset+=sizeof(int);
+		
+		printf("Key length %d\n",keyLength);
+		
+		key=(char*)malloc(sizeof(char)*keyLength);
+	 	memcpy(key,request+offset,keyLength);
+		printf("Key: %s\n",key);
+	  	readFromDataStore(key);	
+		/*TODO Reply here */
+	} 
+	else if(strncmp(request,WRITE_REQUEST,MESSAGE_HEADER_LENGTH)==0)
+	{
+		offset+=MESSAGE_HEADER_LENGTH;
+	    
+	 	memcpy(&keyLength,request+offset,sizeof(int));
+	    offset+=sizeof(int);
+		printf("Key length %d\n",keyLength);
+		
+		key=(char*)malloc(sizeof(char)*keyLength);
+	 	memcpy(key,request+offset,keyLength);
+		offset+=keyLength;
+		
+	 	memcpy(&dataLength,request+offset,sizeof(int));
+	    offset+=sizeof(int);
+		printf("Key: %s\n",key);
+		
+		
+		data=(char*)malloc(sizeof(char)*dataLength);
+	 	memcpy(data,request+offset,dataLength);
+		printf("Data: %s\n",data);
+		
+		writeToDataStore(key,data);
+			
+	}
+	 
+   return 0;	
+ }
+
  /* We can listen to both clients and replicated writes here. What do you think?
     In the slides he says when a datacenter needs to replicate writes it acts as a client
     When the datacenter needs to send a replicated write it can fork a new thread */
- void *listening()
+ void listening()
  {
 
- 	 int flag=-1, i, max_sd, sd, activity, addrlen, new_socket, response, n;
+ 	 int flag=-1, i, max_sd, sd, activity, new_socket, response, n;
 	 fd_set readfds;
-	 char buffer[1024] = { 0 };
-	 addrlen = sizeof(serverAddress);
+	 char buffer[MAX_MESSAGE_SIZE] = { 0 };
+	 socklen_t addrlen = sizeof(serverAddress);
 	
 	 //Select implementation for multiple requests handling
 	 while (1)
@@ -112,7 +173,7 @@
 			if (FD_ISSET(sd, &readfds))
 			{
 				//Check if it was for closing
-				n = read(sd, buffer, 1024);
+				n = read(sd, buffer, MAX_MESSAGE_SIZE);
 				if (n == 0)
 				{
 					//peer disconnected  
@@ -125,14 +186,14 @@
 				}
 
 				//process the message that came in  
-				else
+				else if(strcmp(buffer,"")!=0)
 				{
 					//terminate string with NULL  
-					buffer[n] = '\0';
+					//buffer[n] = '\0';
 					//handle the message
                      if(DEBUG)
 				     	 printf("Message received: %s \n", buffer);
-					//response = Message_handler(buffer, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port), client_sock[i]);
+					 response = messageHandler(buffer, inet_ntoa(clientAddress.sin_addr), ntohs(clientAddress.sin_port), client_sock[i]);
 				}
 			}
 		}
@@ -149,31 +210,14 @@
  
   
 
- void readFromDataStore()
- {
-
- }  
-
- void writeToDataStore()
- {
-  
-	 /*DO NULL CHECK*/
- }
-
  /*TODO -  We can switch to epoll  if we get the time. What do you think? */
  int main()
  {
    int flag=0;
-   pthread_t t1;
-
-   /*Q: Do you want to listen on another thread? What will the main thread do then?
-        We only send the replicated write when we recieve a write operation from the client. 
-   */
-   //int ir1 = pthread_create(&t1, NULL, listening, NULL);
 
    initializeSockets();
-
-   
+   assert(flag==0);
+   listening();
 
    return 1;
  }
