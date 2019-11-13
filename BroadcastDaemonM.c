@@ -2,7 +2,7 @@
    1) Send replicated writes
    2) Fault tolerance         */
 
- #include "DBHandler.h"
+#include "DBHandler.h"
 
  /*Create a new thread which acts a client socket and sends the repliated write*/
  void sendReplicatedWrite()
@@ -20,3 +20,10 @@
 
 
  }
+
+int main()
+{
+
+
+
+}
