@@ -23,7 +23,11 @@
  // {
 
  // }
- #define PORT 60002
+ #define ADDRESS "127.0.0.1"
+ #define PORT 60000
+ #define CASTPORT 60003
+ #define PORT_D1 60001
+ #define PORT_D2 60002
  #define DEBUG 1
  #define DOMAIN AF_INET
  #define SOCKET_TYPE SOCK_STREAM

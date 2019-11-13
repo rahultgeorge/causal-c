@@ -2,11 +2,11 @@
    1) Send replicated writes
    2) Fault tolerance         */
 
- #include "DBHandler.h"
+#include "DBHandler.h"
 
- int main()
- {
+int main()
+{
 
 
 
- }
+}
