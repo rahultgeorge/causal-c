@@ -32,7 +32,7 @@
  #define DOMAIN AF_INET
  #define SOCKET_TYPE SOCK_STREAM
  #define PROTOCOL 0
- #define MAX_CLIENTS 27
+ #define MAX_CLIENTS 10
  #define DEBUG 1
 /*Client TAGS */
  #define MESSAGE_HEADER_LENGTH 8

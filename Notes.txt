@@ -7,11 +7,81 @@ version <timestamp,datacenter_id>
 TODO
 
 
+Update the local clock based on the vector the center receives. (Only if it is greater)
+
+Each client is independent of the other.
+
+
 Each datacenter has a dependency list for each client
 pending_check -> Queue
 
 
+dependency [<key,version>]
+
+version: (timestamp,datacenter_id)
+
+TODO - In the DB datacenter_id (?)
 
 
+
+When you satisfy a dependency check then you check the pending list (This means perform the dependency check and compare it with this current replicated write received.)
+
+Q Slide 22 read(x) datacenter id
+
+Q Why isnt the time increased on reads 22
+
+
+Resolution - New(Later)(>=) Version 
+
+Data structures
+
+dependency 
+
+dependency_list
+
+pending_queue - stores dependencies 
+
+
+Functions
+
+checkDependency
+-> Success - writeToDB()
+-> Failure - appendPendingQueue()
+
+checkPendingQueue
+-> checkAllMyDependencyLists()
+->compareWithCurrentOperation()
+
+
+
+
+TODO 
+1. Initialize the list of dependency lists in main - Yash
+   Initialize pending queue (List of dependency lists) - Rahul
+ 
+   Creating dependency list (Whenever client connects)  - Yash
+   (Need (int) client ID to keep track of respective DS)   - Rahul
+ 
+2. Method to update the list
+   Append Client Dependency list - Yash
+   Append Pending Queue - Yash 
+  
+   Note:
+   i) Time isn't updated when I read
+   ii) On write, send current dependency on the replicated write and then reset then add this current write operation   performed.  
+
+
+Format of message
+/* REPWRI Size of the list(int)| Key(CHAR)(MAX SIZE FIXED 5) | INT(TIMESTAMP), INT(DATACENTERID) | */
+
+3. Send (serialize) the dependency list     
+   Receive the replicated write( dependency list)
+   Note - On receiving need to keep track of the data center id and key so that when   
+
+4. Check pending queue - 
+   Dependency check (checkDependency) - 
+   
+5. Broadcast Daemon - Rahul (Branch)   
+   Fix key size say 5(Display a message regarding the same)
 
 

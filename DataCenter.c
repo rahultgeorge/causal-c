@@ -48,6 +48,7 @@ void initializeSockets()
 
 void initMulticastSocket() {
 	//multicastSocketFD creation
+	int flag,on=1;
 	multiCastSocketFD = socket(DOMAIN, SOCKET_TYPE, PROTOCOL);
 	//socket options - Reusable address 
 	flag = setsockopt(multiCastSocketFD, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
@@ -80,8 +81,9 @@ void writeToDataStore(char* key, char* data)
 int sendReplicatedWrite(char *address, int port, char *message)
 {
 	/*just send the message to the address and port comb*/
-
+    int flag;	
 	//create castToAddress from address and port
+	initMulticastSocket();
 	castToAddress.sin_family = AF_INET;
 	inet_pton(AF_INET, address, &(castToAddress.sin_addr));
 	castToAddress.sin_port = htons(port);
@@ -89,8 +91,10 @@ int sendReplicatedWrite(char *address, int port, char *message)
 	//connecting to the desired castToAddress
 	flag = connect(multiCastSocketFD, (struct sockaddr *)&castToAddress, sizeof(castToAddress));
 	assert(flag >= 0);
-
+	
 	send(multiCastSocketFD, message, MAX_MESSAGE_SIZE, 0);
+	close(multiCastSocketFD);
+	
 	/*TODO: check for response and then return*/
 	return 1;
 }
@@ -166,6 +170,8 @@ int messageHandler(char* request, char* clientIPAddress, int port, int socket)
 		printf("Data: %s\n", data);
 
 		/*TODO: check for dependencies and commit the write if no dependecies*/
+		
+		
 		writeToDataStore(key, data);
 
 	}
@@ -277,9 +283,10 @@ int main()
 
 	initializeSockets();
 	assert(flag == 0);
+	
+	
 	listening();
 	//initialize multicast socket FD
-	initMulticastSocket();
 
 	return 1;
 }
