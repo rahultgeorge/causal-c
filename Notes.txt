@@ -76,7 +76,7 @@ Format of message
 
 3. Send (serialize) the dependency list     
    Receive the replicated write( dependency list)
-   Note - On receiving need to keep track of the data center id and key so that when   
+   Note - On receiving need to keep track of the data center id and key so that when there are subsequent operations you use that id. (IMPLEMENT DB CHECK FOR EVERY READ)
 
 4. Check pending queue - 
    Dependency check (checkDependency) - 
