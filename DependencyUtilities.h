@@ -17,19 +17,8 @@ typedef struct Dependency
 typedef struct DependencyList
 {
 	Dependency list[MAX_DEP];  //Limit this as well
-	int count;
-	void (*insert)(void*);
-	void (*search)(void*);
-	void (*deleteDep)(void*);
+	int count; //for the number of DEPS
 }DependencyList;
-
-typedef struct PendingQueue
-{
-	DependencyList* list;  //Limit this as well
-    void (*insert)   (void*);
-    void (*search)   (void*);
-    void (*deleteDep)(void*);
-}PendingQueue;
 
 
 int createClientDependencyList(int clientID);

@@ -7,7 +7,7 @@ struct sockaddr_in serverAddress, clientAddress, castToAddress, multiCastAddress
 /*DATA CENTER SPECIFIC INFORMATION*/
 int myID;
 int myLamportClockTime;
-PendingQueue pendingQueue;
+
 
 /*Initalizes the datacenter "Server Socket"(listening socket) and all the client sockets */
 void initializeSockets()
@@ -87,7 +87,7 @@ void writeToDataStore(char* key,int clientID,char* data)
 int sendReplicatedWrite(char *address, int port, char *message)
 {
 	/*just send the message to the address and port comb*/
-    int flag;	
+    	int flag;	
 	//create castToAddress from address and port
 	initMulticastSocket();
 	castToAddress.sin_family = AF_INET;
@@ -139,6 +139,7 @@ int messageHandler(char* request, char* clientIPAddress, int port, int socket)
         dependency.key=key;
         dependency.lamportClockTime=myLamportClockTime;
         dependency.dataCenterID=dataCenterID;
+        
         appendClientDependencyList(clientID,dependency);
 	}
     /*WRITE REQUEST*/
@@ -169,11 +170,19 @@ int messageHandler(char* request, char* clientIPAddress, int port, int socket)
 
 		writeToDataStore(key,clientID,data);
 		/* Write committed to DB, now send REP_WRTITE to other data centers */
-		memcpy(request, REP_WRITE, MESSAGE_HEADER_LENGTH); /*TODO: check if this works*/
+		memcpy(request, REP_WRITE, MESSAGE_HEADER_LENGTH);
 		int resp = sendReplicatedWrite(ADDRESS, PORT_D1, request);
 		assert(resp == 1);
 		resp = sendReplicatedWrite(ADDRESS, PORT_D2, request);
 		assert(resp == 1);
+		
+		/*clear dependency list and add this wirte*/
+		clearDependencyList(clientID);
+		dependency.key=key;
+        	dependency.lamportClockTime=myLamportClockTime;
+        	dependency.dataCenterID=dataCenterID;
+
+        	appendClientDependencyList(clientID,dependency);
 	}
     /*REPLICATED WRITE REQUEST*/
 	else if (strncmp(request, REP_WRITE, MESSAGE_HEADER_LENGTH) == 0)
@@ -308,6 +317,7 @@ int main()
 	int flag = 0;
     flag=initDB();
     assert(flag == 0);
+ 
 	initializeSockets();
 	listening();
 	return 1;
