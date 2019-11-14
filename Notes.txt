@@ -57,10 +57,10 @@ checkPendingQueue
 
 TODO 
 1. Initialize the list of dependency lists in main - Yash
-   Initialize pending queue (List of dependency lists) - Rahul
+   Initialize pending queue (List of dependency lists) - Rahul - Done
  
    Creating dependency list (Whenever client connects)  - Yash
-   (Need (int) client ID to keep track of respective DS)   - Rahul
+   (Need (int) client ID to keep track of respective DS)   - Rahul -Done
  
 2. Method to update the list
    Append Client Dependency list - Yash

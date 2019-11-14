@@ -1,15 +1,15 @@
 #include "DBHandler.h"
 
 
-int commit(char* key, int client_id, void* data)
+int commit(char* key, int client_id,int center_id, void* data)
 {
 	sqlite3 *db;
 	sqlite3_stmt *stmt;
 	char* query;
 	char *zErrMsg = 0;
-
+    
 	int rc = sqlite3_open(DB_NAME, &db);
-	asprintf(&query, "insert into CausalTable (KEY, CLIENT_ID, VALUE) values ('%s', %d,'%s');", key, client_id, ((char *)data));
+	asprintf(&query, "insert into CausalTable (KEY, CLIENT_ID,CENTER_ID, VALUE) values ('%s',%d, %d,'%s');", key,center_id, client_id, ((char *)data));
 
 	sqlite3_prepare_v2(db, query, strlen(query), &stmt, NULL);
 
@@ -73,10 +73,54 @@ int readFromDB(char* key, void* data)
 	sqlite3_finalize(stmt);
 	return 0;
 
-
 }
 
+/*RETURN THE ID*/
+int readIDFromDB(char* key)
+{
+    sqlite3 *db;
+    sqlite3_stmt *stmt;
+    char *query;
+    char *err_msg = 0;
+    int rc = -1;
+    int id=-1;
 
+    rc = sqlite3_open(DB_NAME, &db);
+
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Cannot open database: %s\n",
+            sqlite3_errmsg(db));
+        sqlite3_close(db);
+        return id;
+    }
+
+
+    printf("Retrieving value\n");
+
+    //Get DATACENTER ID of the replicated write it received
+    asprintf(&query, "SELECT CENTER_ID FROM CausalTable WHERE KEY ='%s' AND ID=-1;", key);
+
+    sqlite3_prepare_v2(db, query, strlen(query), &stmt, NULL);
+    rc = sqlite3_step(stmt);
+
+    if (rc == SQLITE_ROW)
+    {
+        printf("Read %d\n", sqlite3_column_int(stmt, 2));
+        id=sqlite3_column_int(stmt,2);
+    }
+
+    else if (rc != SQLITE_OK)
+    {
+
+        fprintf(stderr, "Failed to select data\n");
+        fprintf(stderr, "SQL error: %s\n", err_msg);
+        sqlite3_free(err_msg);
+        sqlite3_close(db);
+        return -1;
+    }
+        sqlite3_finalize(stmt);
+    return id;
+}
 
 int initDB()
 {
@@ -97,6 +141,7 @@ int initDB()
 	query = "CREATE TABLE IF NOT EXISTS CausalTable  ("  \
 		"KEY           CHAR(20)    NOT NULL," \
 		"CLIENT_ID            INT     NOT NULL," \
+        "CENTER_ID            INT     NOT NULL," \
 		"VALUE            VARCHAR(1000)     NOT NULL" \
 		");";
 

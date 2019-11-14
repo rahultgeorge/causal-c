@@ -1,4 +1,15 @@
-#include "DependencyUtilties.h"
+#include "DependencyUtilities.h"
+
+int appendClientDependencyList(int clientID,Dependency dependency)
+{
+  /*TODO Add dependency to the relavent dependency list */
+}
+
+int clearDependencyList(int clientID)
+{
+    /*TODO Clear the relavent dependency list */
+
+}
 
 int dummyF()
 {
