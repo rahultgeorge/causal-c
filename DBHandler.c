@@ -43,7 +43,6 @@ int readFromDB(char* key, void* data)
 		return -1;
 	}
 
-
 	printf("Retrieving value\n");
 
 	//Get count
@@ -54,7 +53,7 @@ int readFromDB(char* key, void* data)
 
 	if (rc == SQLITE_ROW)
 	{
-		printf("Read %s\n", sqlite3_column_text(stmt, 0));
+        printf("Read %s\n", sqlite3_column_text(stmt, 0));
 		strcpy((char*)data, (char*)sqlite3_column_text(stmt, 0));
 	}
 
@@ -95,7 +94,7 @@ int readIDFromDB(char* key)
     }
 
 
-    printf("Retrieving value\n");
+    printf("Retrieving ID\n");
 
     //Get DATACENTER ID of the replicated write it received
     asprintf(&query, "SELECT CENTER_ID FROM CausalTable WHERE KEY ='%s' AND ID=-1;", key);
@@ -105,15 +104,14 @@ int readIDFromDB(char* key)
 
     if (rc == SQLITE_ROW)
     {
-        printf("Read %d\n", sqlite3_column_int(stmt, 2));
-        id=sqlite3_column_int(stmt,2);
+        printf("ID %d\n", sqlite3_column_int(stmt, 0));
+        id=sqlite3_column_int(stmt,0);
     }
 
     else if (rc != SQLITE_OK)
     {
-
-        fprintf(stderr, "Failed to select data\n");
-        fprintf(stderr, "SQL error: %s\n", err_msg);
+        //fprintf(stderr, "Failed to select data\n");
+        //fprintf(stderr, "SQL error: %s\n", err_msg);
         sqlite3_free(err_msg);
         sqlite3_close(db);
         return -1;

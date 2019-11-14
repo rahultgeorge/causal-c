@@ -1,8 +1,13 @@
 #include "Core.h"
-
+#include "DependencyUtilities.h"
 
 int serverSocketFD, multiCastSocketFD, clientLength, client_sock[MAX_CLIENTS];
 struct sockaddr_in serverAddress, clientAddress, castToAddress, multiCastAddress;
+
+/*DATA CENTER SPECIFIC INFORMATION*/
+int myID;
+int myLamportClockTime;
+PendingQueue pendingQueue;
 
 /*Initalizes the datacenter "Server Socket"(listening socket) and all the client sockets */
 void initializeSockets()
@@ -68,13 +73,14 @@ void initMulticastSocket() {
 
 void readFromDataStore(char* key)
 {
-
+    char* data=malloc(sizeof(char)*20);
+    readFromDB(key,(void*) data);
 }
 
-void writeToDataStore(char* key, char* data)
+void writeToDataStore(char* key,int clientID,char* data)
 {
-
-	/*DO NULL CHECK*/
+    /*DO NULL CHECK*/
+    commit(key,clientID,myID,data);
 }
 
 /*Create a new thread which acts a client socket and sends the repliated write*/
@@ -90,7 +96,7 @@ int sendReplicatedWrite(char *address, int port, char *message)
 
 	//connecting to the desired castToAddress
 	flag = connect(multiCastSocketFD, (struct sockaddr *)&castToAddress, sizeof(castToAddress));
-	assert(flag >= 0);
+	assert(flag == 0);
 	
 	send(multiCastSocketFD, message, MAX_MESSAGE_SIZE, 0);
 	close(multiCastSocketFD);
@@ -102,10 +108,18 @@ int sendReplicatedWrite(char *address, int port, char *message)
 int messageHandler(char* request, char* clientIPAddress, int port, int socket)
 {
 	int offset = 0, keyLength, dataLength;
+    int dataCenterID=-1;
+    signed int clientID=-1;
 	char* key, *data;
+    Dependency dependency;
+    /*READ REQUEST*/
 	if (strncmp(request, READ_REQUEST, MESSAGE_HEADER_LENGTH) == 0)
 	{
 		offset += MESSAGE_HEADER_LENGTH;
+        
+        memcpy(&clientID, request + offset, sizeof(int));
+        offset += sizeof(int);
+        printf("Client  ID %d\n", clientID);
 
 		memcpy(&keyLength, request + offset, sizeof(int));
 		offset += sizeof(int);
@@ -116,11 +130,25 @@ int messageHandler(char* request, char* clientIPAddress, int port, int socket)
 		memcpy(key, request + offset, keyLength);
 		printf("Key: %s\n", key);
 		readFromDataStore(key);
-		/*TODO Reply here */
+        
+        /*Check for the appropriate data center id*/
+        dataCenterID=readIDFromDB(key);
+        if(dataCenterID==-1)
+            dataCenterID=myID;
+        /*Create new dependency*/
+        dependency.key=key;
+        dependency.lamportClockTime=myLamportClockTime;
+        dependency.dataCenterID=dataCenterID;
+        appendClientDependencyList(clientID,dependency);
 	}
+    /*WRITE REQUEST*/
 	else if (strncmp(request, WRITE_REQUEST, MESSAGE_HEADER_LENGTH) == 0)
 	{
 		offset += MESSAGE_HEADER_LENGTH;
+
+        memcpy(&clientID, request + offset, sizeof(int));
+        offset += sizeof(int);
+        printf("Client  ID %d\n", clientID);
 
 		memcpy(&keyLength, request + offset, sizeof(int));
 		offset += sizeof(int);
@@ -139,15 +167,15 @@ int messageHandler(char* request, char* clientIPAddress, int port, int socket)
 		memcpy(data, request + offset, dataLength);
 		printf("Data: %s\n", data);
 
-		writeToDataStore(key, data);
-		/*write committed to DB, now send REP_WRTITE to other data centers*/
+		writeToDataStore(key,clientID,data);
+		/* Write committed to DB, now send REP_WRTITE to other data centers */
 		memcpy(request, REP_WRITE, MESSAGE_HEADER_LENGTH); /*TODO: check if this works*/
 		int resp = sendReplicatedWrite(ADDRESS, PORT_D1, request);
 		assert(resp == 1);
 		resp = sendReplicatedWrite(ADDRESS, PORT_D2, request);
 		assert(resp == 1);
-
 	}
+    /*REPLICATED WRITE REQUEST*/
 	else if (strncmp(request, REP_WRITE, MESSAGE_HEADER_LENGTH) == 0)
 	{
 		offset += MESSAGE_HEADER_LENGTH;
@@ -164,16 +192,14 @@ int messageHandler(char* request, char* clientIPAddress, int port, int socket)
 		offset += sizeof(int);
 		printf("Key: %s\n", key);
 
-
 		data = (char*)malloc(sizeof(char)*dataLength);
 		memcpy(data, request + offset, dataLength);
 		printf("Data: %s\n", data);
 
 		/*TODO: check for dependencies and commit the write if no dependecies*/
-		
-		
-		writeToDataStore(key, data);
-
+        
+        /* -1 to indicate that this was a replicated write and not a client initiated write*/
+		writeToDataStore(key,-1,data);
 	}
 	return 0;
 }
@@ -280,13 +306,9 @@ void listening()
 int main()
 {
 	int flag = 0;
-
+    flag=initDB();
+    assert(flag == 0);
 	initializeSockets();
-	assert(flag == 0);
-	
-	
 	listening();
-	//initialize multicast socket FD
-
 	return 1;
 }

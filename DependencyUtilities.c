@@ -8,7 +8,14 @@ int appendClientDependencyList(int clientID,Dependency dependency)
 int clearDependencyList(int clientID)
 {
     /*TODO Clear the relavent dependency list */
+    
 
+}
+
+int checkDependency(DependencyList replicatedDepList)
+{
+    /*TODO Check dependencies*/
+    
 }
 
 int dummyF()

@@ -1,5 +1,6 @@
 #ifndef _CORE_H
  #define _CORE_H
+ #include "DBHandler.h"
  #include <sys/types.h>
  #include <sys/socket.h>
  #include <netinet/in.h>
@@ -13,16 +14,8 @@
  #include <arpa/inet.h>
  #include <time.h>
  #include <errno.h>
- #include "DBHandler.h"
  #include <unistd.h>
 
-
-
-
- // struct timeStamp
- // {
-
- // }
  #define ADDRESS "127.0.0.1"
  #define PORT 60000
  #define CASTPORT 60003
@@ -40,21 +33,11 @@
  #define WRITE_REQUEST "WRIT_REQ"
  #define WRITE_ACK     "WRIT_ACK"
  #define WRITE_NACK    "WRIT_NCK"
- 
- /*  */
+ /* Datacenter TAGS  */
  #define REP_WRITE     "REP_WRIT"
 
- // #define FILE_LOCATION_REQUEST "FLO_REQUEST\0"
- // #define CHUNK_REGISTER_REQUEST "CHU_REQUEST\0"
- // #define FILE_CHUNK_REQUEST "FCH_REQUEST\0"
-
-
- // #define REGISTER_REPLY       "REGIS_REPLY\0"
- // #define FILE_LIST_REPLY      "FI_LS_REPLY\0"
- // #define FILE_LOCATION_REPLY  "FI_LO_REPLY\0"
- // #define CHUNK_REGISTER_REPLY "CHUNK_REPLY\0"
-
-
+ #define updateTime(x) x+1
+ 
  #define MAX_MESSAGE_SIZE 2048
 
 #endif
