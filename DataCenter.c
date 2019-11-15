@@ -5,8 +5,8 @@ int serverSocketFD, multiCastSocketFD, clientLength, client_sock[MAX_CLIENTS];
 struct sockaddr_in serverAddress, clientAddress, castToAddress, multiCastAddress;
 
 /*DATA CENTER SPECIFIC INFORMATION*/
-int myID;
-int myLamportClockTime;
+int myID = PORT; /*is my port??*/
+int myLamportClockTime = 0;
 
 
 /*Initalizes the datacenter "Server Socket"(listening socket) and all the client sockets */
@@ -53,7 +53,7 @@ void initializeSockets()
 
 void initMulticastSocket() {
 	//multicastSocketFD creation
-	int flag,on=1;
+	int flag, on = 1;
 	multiCastSocketFD = socket(DOMAIN, SOCKET_TYPE, PROTOCOL);
 	//socket options - Reusable address 
 	flag = setsockopt(multiCastSocketFD, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
@@ -73,21 +73,21 @@ void initMulticastSocket() {
 
 void readFromDataStore(char* key)
 {
-    char* data=malloc(sizeof(char)*20);
-    readFromDB(key,(void*) data);
+	char* data = malloc(sizeof(char) * 20);
+	readFromDB(key, (void*)data);
 }
 
-void writeToDataStore(char* key,int clientID,char* data)
+void writeToDataStore(char* key, int clientID, char* data)
 {
-    /*DO NULL CHECK*/
-    commit(key,clientID,myID,data);
+	/*DO NULL CHECK*/
+	commit(key, clientID, myID, data);
 }
 
 /*Create a new thread which acts a client socket and sends the repliated write*/
 int sendReplicatedWrite(char *address, int port, char *message)
 {
 	/*just send the message to the address and port comb*/
-    	int flag;	
+	int flag;
 	//create castToAddress from address and port
 	initMulticastSocket();
 	castToAddress.sin_family = AF_INET;
@@ -97,120 +97,144 @@ int sendReplicatedWrite(char *address, int port, char *message)
 	//connecting to the desired castToAddress
 	flag = connect(multiCastSocketFD, (struct sockaddr *)&castToAddress, sizeof(castToAddress));
 	assert(flag == 0);
-	
+
 	send(multiCastSocketFD, message, MAX_MESSAGE_SIZE, 0);
 	close(multiCastSocketFD);
-	
+
 	/*TODO: check for response and then return*/
 	return 1;
 }
 
-int messageHandler(char* request, char* clientIPAddress, int port, int socket)
+void messageHandler(char* request, char* clientIPAddress, int port, int socket)
 {
 	int offset = 0, keyLength, dataLength;
-    int dataCenterID=-1;
-    signed int clientID=-1;
+	int dataCenterID = -1;
+	signed int clientID = -1;
 	char* key, *data;
-    Dependency dependency;
-    /*READ REQUEST*/
+	Dependency dependency;
+	/*READ REQUEST*/
 	if (strncmp(request, READ_REQUEST, MESSAGE_HEADER_LENGTH) == 0)
 	{
 		offset += MESSAGE_HEADER_LENGTH;
-        
-        memcpy(&clientID, request + offset, sizeof(int));
-        offset += sizeof(int);
-        printf("Client  ID %d\n", clientID);
+		//reading client ID
+		memcpy(&clientID, request + offset, sizeof(int));
+		offset += sizeof(int);
+		printf("Client  ID %d\n", clientID);
 
+		//reading key length
 		memcpy(&keyLength, request + offset, sizeof(int));
 		offset += sizeof(int);
-
 		printf("Key length %d\n", keyLength);
 
+		//reading key
 		key = (char*)malloc(sizeof(char)*keyLength);
 		memcpy(key, request + offset, keyLength);
 		printf("Key: %s\n", key);
-		readFromDataStore(key);
-        
-        /*Check for the appropriate data center id*/
-        dataCenterID=readIDFromDB(key);
-        if(dataCenterID==-1)
-            dataCenterID=myID;
-        /*Create new dependency*/
-        dependency.key=key;
-        dependency.lamportClockTime=myLamportClockTime;
-        dependency.dataCenterID=dataCenterID;
-        
-        appendClientDependencyList(clientID,dependency);
+
+		//read from DB
+		readFromDataStore(key); //TODO: and respond to the client with the key value
+
+		/*Check for the appropriate data center id*/
+		dataCenterID = readIDFromDB(key);
+		//if DC ID not found
+		if (dataCenterID == -1)
+			dataCenterID = myID;
+
+		/*Create new dependency*/
+		dependency.key = key;
+		dependency.lamportClockTime = myLamportClockTime;
+		dependency.dataCenterID = dataCenterID;
+		//add this DP to the DPLISTS[clientID]
+		assert(appendClientDependencyList(clientID, dependency) == 1);
 	}
-    /*WRITE REQUEST*/
+	/*WRITE REQUEST*/
 	else if (strncmp(request, WRITE_REQUEST, MESSAGE_HEADER_LENGTH) == 0)
 	{
 		offset += MESSAGE_HEADER_LENGTH;
-
-        memcpy(&clientID, request + offset, sizeof(int));
-        offset += sizeof(int);
-        printf("Client  ID %d\n", clientID);
-
+		//reading the clientID
+		memcpy(&clientID, request + offset, sizeof(int));
+		offset += sizeof(int);
+		printf("Client  ID %d\n", clientID);
+		//reading the key length
 		memcpy(&keyLength, request + offset, sizeof(int));
 		offset += sizeof(int);
 		printf("Key length %d\n", keyLength);
-
+		//reading the key
 		key = (char*)malloc(sizeof(char)*keyLength);
 		memcpy(key, request + offset, keyLength);
 		offset += keyLength;
-
+		//reading the data length
 		memcpy(&dataLength, request + offset, sizeof(int));
 		offset += sizeof(int);
 		printf("Key: %s\n", key);
-
-
+		//reading the data value
 		data = (char*)malloc(sizeof(char)*dataLength);
 		memcpy(data, request + offset, dataLength);
 		printf("Data: %s\n", data);
 
-		writeToDataStore(key,clientID,data);
+		writeToDataStore(key, clientID, data); //TODO: respond to the client with ACK
 		/* Write committed to DB, now send REP_WRTITE to other data centers */
+		//TODO: attach the dependency list of this client to this request
 		memcpy(request, REP_WRITE, MESSAGE_HEADER_LENGTH);
 		int resp = sendReplicatedWrite(ADDRESS, PORT_D1, request);
 		assert(resp == 1);
 		resp = sendReplicatedWrite(ADDRESS, PORT_D2, request);
 		assert(resp == 1);
-		
+
 		/*clear dependency list and add this wirte*/
 		clearDependencyList(clientID);
-		dependency.key=key;
-        	dependency.lamportClockTime=myLamportClockTime;
-        	dependency.dataCenterID=dataCenterID;
-
-        	appendClientDependencyList(clientID,dependency);
+		/*create new dependency and add to the DPLISTS[clientID]*/
+		dependency.key = key;
+		dependency.lamportClockTime = myLamportClockTime++; /*time should be increased by 1 after a write*/
+		dependency.dataCenterID = dataCenterID;
+		assert(appendClientDependencyList(clientID, dependency) == 1);
 	}
-    /*REPLICATED WRITE REQUEST*/
+	/*REPLICATED WRITE REQUEST*/
 	else if (strncmp(request, REP_WRITE, MESSAGE_HEADER_LENGTH) == 0)
 	{
 		offset += MESSAGE_HEADER_LENGTH;
-
+		//reading the key length
 		memcpy(&keyLength, request + offset, sizeof(int));
 		offset += sizeof(int);
 		printf("Key length %d\n", keyLength);
-
+		//reading the key
 		key = (char*)malloc(sizeof(char)*keyLength);
 		memcpy(key, request + offset, keyLength);
 		offset += keyLength;
-
+		//reading data length
 		memcpy(&dataLength, request + offset, sizeof(int));
 		offset += sizeof(int);
 		printf("Key: %s\n", key);
-
+		//reading data
 		data = (char*)malloc(sizeof(char)*dataLength);
 		memcpy(data, request + offset, dataLength);
 		printf("Data: %s\n", data);
+		//TODO: read the dependency list from the message
+		DependencyList replicatedDepList;
 
-		/*TODO: check for dependencies and commit the write if no dependecies*/
-        
-        /* -1 to indicate that this was a replicated write and not a client initiated write*/
-		writeToDataStore(key,-1,data);
+
+
+
+		/*check for dependencies and commit the write if no dependecies*/
+		int flag = checkDependency(replicatedDepList);
+		if (flag == 0) {
+			//add to the pending queue
+			assert(appendPendingQueue(replicatedDepList) == 1);
+		}
+		else {
+			/* -1 to indicate that this was a replicated write and not a client initiated write*/
+			writeToDataStore(key, -1, data); /*nice job*/
+			/*reissue dep check for all the keys in the pending queue*/
+			for (int i = 0; i < pendingCount; i++) {
+
+				flag = checkDependency(DependingQueue[i]->list); // check if this works??
+				if (flag == 1) {
+					//writeToDataStore(newkey, -1, newdata);
+				}
+			}
+		}
 	}
-	return 0;
+	return;
 }
 
 /* We can listen to both clients and replicated writes here. What do you think?
@@ -301,7 +325,7 @@ void listening()
 					//handle the message
 					if (DEBUG)
 						printf("Message received: %s \n", buffer);
-					response = messageHandler(buffer, inet_ntoa(clientAddress.sin_addr), ntohs(clientAddress.sin_port), client_sock[i]);
+					messageHandler(buffer, inet_ntoa(clientAddress.sin_addr), ntohs(clientAddress.sin_port), client_sock[i]);
 				}
 			}
 		}
@@ -311,13 +335,13 @@ void listening()
 }
 
 
-/*TODO -  We can switch to epoll  if we get the time. What do you think? */
+/*TODO -  We can switch to epoll  if we get the time. What do you think? NAAAAAAAAAAH....we have better things to do*/
 int main()
 {
 	int flag = 0;
-    flag=initDB();
-    assert(flag == 0);
- 
+	flag = initDB();
+	assert(flag == 0);
+
 	initializeSockets();
 	listening();
 	return 1;
