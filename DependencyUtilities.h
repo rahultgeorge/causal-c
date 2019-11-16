@@ -15,7 +15,7 @@ typedef struct Dependency
 typedef struct Operation
 {
     char key[KEY_SIZE];
-    char* value;
+    char* data;
     int dataCenterID;
 }Operation;
 
@@ -47,7 +47,7 @@ void clearDependencyList(int clientID);
 int appendPendingQueue(DependencyList list);
 
 /* Call check dependency */
-int checkPendingQueue(char* key, int timestamp, int data);
+//int checkPendingQueue(char* key, int timestamp, int data);
 
 /*Check all the dependency lists*/
 int checkDependency(DependencyList replicatedDepList);
