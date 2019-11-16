@@ -300,17 +300,25 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
         }
 
 		/*check for dependencies and commit the write if no dependecies*/
-//		flag = checkDependency(replicatedDepList);
-//		if (flag == 0) {
-//			//add to the pending queue
-//			assert(appendPendingQueue(replicatedDepList) == 1);
-//		}
-//		else {
-//			/* -1 to indicate that this was a replicated write and not a client initiated write*/
-//			commit(key, -1,dataCenterID, data);
-//			/*reissue dep check for all the keys in the pending queue*/
-//            checkPendingQueue(key,myLamportClockTime,myID);
-//		}
+		flag = checkDependency(replicatedDepList);
+		if (flag == 0) {
+			//add to the pending queue
+			assert(appendPendingQueue(replicatedDepList) == 1);
+		}
+		else {
+			/* -1 to indicate that this was a replicated write and not a client initiated write*/
+			commit(key, -1,dataCenterID, data);
+			/*reissue dep check for all the keys in the pending queue*/
+            //checkPendingQueue(key,myLamportClockTime,myID);
+
+			for (i = 0; i <= pendingCount; i++)
+			{
+				if (checkDependency(pendingQueue[i]) == 1) {
+					removeFromPendingQueue(i);
+					commit(pendingQueue[i].operation->key, -1, pendingQueue[i].operation->dataCenterID, pendingQueue[i].operation->data);
+				}				
+			}
+		}
 	}
 	return;
 }

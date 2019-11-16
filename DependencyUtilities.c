@@ -33,7 +33,8 @@ int checkDependency(DependencyList replicatedDepList)
 		for (j = 0; j < MAX_CLIENTS; j++) {
 			for (k = 0; k < clientDependenciesLists[j].count; k++) {
 				if (strcmp(clientDependenciesLists[j].list[k].key, replicatedDepList.list[i].key) == 0
-					&& clientDependenciesLists[j].list[k].lamportClockTime >= replicatedDepList.list[i].lamportClockTime) {
+					&& clientDependenciesLists[j].list[k].lamportClockTime >= replicatedDepList.list[i].lamportClockTime
+					&& clientDependenciesLists[j].list[k].dataCenterID == replicatedDepList.list[i].dataCenterID) {
 					flag = 1;
 					break;
 				}
@@ -51,8 +52,24 @@ int checkDependency(DependencyList replicatedDepList)
 
 /*Pending queue is a list of lists */
 int appendPendingQueue(DependencyList list) {
+    int flag = 0;
 	if (pendingCount < MAX_PENDING) {
-		pendingQueue[pendingCount].count = list.count;
+		
+		for (int j = 0; j < MAX_PENDING; j++) {
+			if (pendingQueue[j].count == 0) {
+				pendingQueue[j].count = list.count;
+				pendingQueue[j].operation = list.operation;
+				pendingQueue[j].list = list.list;
+				flag = 1; 
+			}
+		}
+        
+		if (flag == 0) {
+			pendingQueue[pendingCount].count = list.count;
+			pendingQueue[pendingCount].operation = list.operation;
+			pendingQueue[pendingCount].list = list.list;
+		}
+		pendingCount++;
 		return 1;
 	}
 	return 0;
@@ -61,18 +78,13 @@ int appendPendingQueue(DependencyList list) {
 
 int removeFromPendingQueue(int index)
 {
-   for(int i=0;i<pendingCount;i++)
-      if(i==index)
-      {
-          
-          
-          break;
-      }
+	pendingQueue[index].count = 0;
     --pendingCount;
     return 0;
 }
 
 /* Call check dependency on every dep list and commit when dep check passes*/
+/*
 int checkPendingQueue(char* key, int timestamp, int datacenter_id) {
     int i=0,flag=0;
     for(i=0;i<pendingCount;i++)
@@ -81,13 +93,14 @@ int checkPendingQueue(char* key, int timestamp, int datacenter_id) {
         if(checkDependency(pendingQueue[i])==1)
             flag=1;
         else
-           /*TODO - Check with this operation */
+           //TODO - Check with this operation 
             printf("Compared with the current replicated write performed\n");
         if(flag==1)
         {
             removeFromPendingQueue(i);
-            
+			//commit
         }
     }
     return 0;
 }
+*/
