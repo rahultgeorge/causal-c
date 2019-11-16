@@ -316,7 +316,7 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
 			{
 				if (checkDependency(pendingQueue[i]) == 1) {
 					removeFromPendingQueue(i);
-					commit(pendingQueue[i].operation->key, -1, pendingQueue[i].operation->dataCenterID, pendingQueue[i].operation->data);
+					commit(pendingQueue[i].operation.key, -1, pendingQueue[i].operation.dataCenterID, pendingQueue[i].operation.data);
 				}				
 			}
 		}

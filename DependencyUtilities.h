@@ -27,7 +27,7 @@ typedef struct DependencyList
 {
 	Dependency list[MAX_DEP];  //Limit this as well
 	int count; //for the number of DEPS
-    Operation operation[MAX_DEP]; // Operation that needs to be performed if the dependency check is satisified
+    Operation operation; // Operation that needs to be performed if the dependency check is satisified
 }DependencyList;
 
 
@@ -46,6 +46,8 @@ void clearDependencyList(int clientID);
 
 /*Pending queue is a list of lists */
 int appendPendingQueue(DependencyList list);
+
+int removeFromPendingQueue(int index);
 
 /* Call check dependency */
 //int checkPendingQueue(char* key, int timestamp, int data);

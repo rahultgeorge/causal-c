@@ -52,22 +52,24 @@ int checkDependency(DependencyList replicatedDepList)
 
 /*Pending queue is a list of lists */
 int appendPendingQueue(DependencyList list) {
-    int flag = 0;
+    int flag = 0,i,j;
 	if (pendingCount < MAX_PENDING) {
 		
-		for (int j = 0; j < MAX_PENDING; j++) {
-			if (pendingQueue[j].count == 0) {
-				pendingQueue[j].count = list.count;
-				pendingQueue[j].operation = list.operation;
-				pendingQueue[j].list = list.list;
-				flag = 1; 
+		for (i = 0; i < MAX_PENDING; i++) {
+			if (pendingQueue[i].count == 0) {
+				pendingQueue[i].count = list.count;
+				pendingQueue[i].operation = list.operation;
+                for(j=0;j<list.count;j++)
+                    pendingQueue[i].list[j] = list.list[j];
+				flag = 1;
 			}
 		}
         
 		if (flag == 0) {
 			pendingQueue[pendingCount].count = list.count;
 			pendingQueue[pendingCount].operation = list.operation;
-			pendingQueue[pendingCount].list = list.list;
+            for(j=0;j<list.count;j++)
+                pendingQueue[i].list[j] = list.list[j];
 		}
 		pendingCount++;
 		return 1;
