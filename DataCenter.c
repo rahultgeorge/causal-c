@@ -288,11 +288,11 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
         offset+=dataLength;
 		printf("Data: %s\n", data);
         //Reading the data center ID
-        memcpy(request + offset,&dataCenterID,  sizeof(int));
+        memcpy(&dataCenterID,request + offset,sizeof(int));
         offset+=sizeof(int);
         printf("Data center ID %d\n",dataCenterID);
         //Reading the lamport clock time
-        memcpy(request + offset,&lamportClockTimeReceived,  sizeof(int));
+        memcpy(&lamportClockTimeReceived,request + offset,sizeof(int));
         offset+=sizeof(int);
         printf("Lamport clock time received  %d\n",lamportClockTimeReceived);
 
