@@ -53,7 +53,7 @@ void initializeSockets()
 	if (DEBUG) printf("Data Center Socket Listening\n");
 }
 
-void initMulticastSocket(int port) {
+void initMulticastSocket(char* address,int port) {
 	//multicastSocketFD creation
 	int flag, on = 1, sock;
 	if (port == PORT_D1) sock = multiCastSocketFD;
@@ -101,7 +101,7 @@ int sendReplicatedWrite(char *address, int port, char *message)
 	/*just send the message to the address and port comb*/
 	int flag;
 	//create castToAddress from address and port
-	initMulticastSocket();
+	initMulticastSocket(address, port);
 	if(port==PORT_D1)
 	send(multiCastSocketFD, message, MAX_MESSAGE_SIZE, 0);
 	else if (port == PORT_D2)
