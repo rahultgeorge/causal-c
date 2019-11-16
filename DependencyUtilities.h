@@ -4,6 +4,7 @@
 #define MAX_CLIENTS 10
 #define MAX_PENDING 100
 #define KEY_SIZE 5
+#include<string.h>
 
 typedef struct Dependency
 {

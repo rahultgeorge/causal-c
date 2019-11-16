@@ -23,7 +23,7 @@ void clearDependencyList(int clientID)
 }
 
 
-int checkDependency(PendingDependencyList replicatedDepList)
+int checkDependency(DependencyList replicatedDepList)
 {
 	/*Check dependencies*/
 	int i, j, k, flag = 0;
@@ -53,9 +53,6 @@ int checkDependency(PendingDependencyList replicatedDepList)
 int appendPendingQueue(DependencyList list) {
 	if (pendingCount < MAX_PENDING) {
 		pendingQueue[pendingCount].count = list.count;
-		for (int i = 0; i < list.count; i++) {
-			pendingQueue[pendingCount].list[i] = list.list[i];
-		}
 		return 1;
 	}
 	return 0;

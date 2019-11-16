@@ -3,9 +3,11 @@
 
 int serverSocketFD, multiCastSocketFD, clientLength, client_sock[MAX_CLIENTS];
 struct sockaddr_in serverAddress, clientAddress, castToAddress, multiCastAddress;
+int PORT,PORT_D1,PORT_D2,CASTPORT;
+
 
 /*DATA CENTER SPECIFIC INFORMATION*/
-int myID = PORT; /*is my port??*/
+int myID ; /*PORT*/
 int myLamportClockTime = 0;
 
 
@@ -186,6 +188,7 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
         memcpy(request, REP_WRITE, MESSAGE_HEADER_LENGTH);
         offset=MESSAGE_HEADER_LENGTH;
         
+        keyLength+=1;
         //Write the key length
         memcpy(request + offset,&keyLength, sizeof(int));
         offset += sizeof(int);
@@ -204,15 +207,19 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
         
         
         /*Including the current dependency list in the message
-          Format:  LIST_SIZE [KEY TIMESTAMP DATACENTER_ID] */
+          Format:  LIST_SIZE [KEY_LENGTH KEY TIMESTAMP DATACENTER_ID] */
         //LIST SIZE
         memcpy(request+offset,&clientDependenciesLists[clientID].count, sizeof(int));
         offset+=sizeof(int);
         for(i=0;i<clientDependenciesLists[clientID].count;i++)
         {
+          //Writing KEY_LENGTH
+          keyLength=strlen(clientDependenciesLists[clientID].list[i].key)+1;
+          memcpy(request+offset,&keyLength, sizeof(int));
+          offset+=sizeof(int);
           //Writing KEY
-          memcpy(request+offset,clientDependenciesLists[clientID].list[i].key, KEY_SIZE);
-          offset+=KEY_SIZE;
+          memcpy(request+offset,clientDependenciesLists[clientID].list[i].key,keyLength);
+          offset+=keyLength;
           //Writing Lamport Clock Time
           memcpy(request+offset,&clientDependenciesLists[clientID].list[i].lamportClockTime, sizeof(int));
           offset+=sizeof(int);
@@ -259,39 +266,51 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
         //Reading the data center ID
         memcpy(request + offset,&dataCenterID,  sizeof(int));
         offset+=sizeof(int);
+        printf("Data center ID %d\n",dataCenterID);
 		//TODO: read the dependency list from the message
 		
-        
+        //printf("\e[1;1H\e[2J");
         memcpy(&replicatedDepList.count,request+offset,sizeof(int));
         offset+=sizeof(int);
-        for(i=0;i<clientDependenciesLists[clientID].count;i++)
+        printf("DEP LIST SIZE %d\n",replicatedDepList.count);
+        
+        for(i=0;i<replicatedDepList.count;i++)
         {
+          //KEY_LENGTH
+          memcpy(&keyLength,request+offset, sizeof(int));
+          offset+=sizeof(int);
+          printf("Key length %d\n", keyLength);
+            
           //KEY
-          memcpy(replicatedDepList.list[i].key,request+offset, KEY_SIZE);
-          offset+=KEY_SIZE;
+          replicatedDepList.list[i].key=(char*)malloc(sizeof(char)*keyLength);
+          memcpy(replicatedDepList.list[i].key,request+offset, keyLength);
+          offset+=keyLength;
+          printf("Key  %s\n", replicatedDepList.list[i].key);
+
           //Lamport Clock Time
           memcpy(&replicatedDepList.list[i].lamportClockTime,request+offset, sizeof(int));
           offset+=sizeof(int);
+          printf("Lamport clock time %d\n", replicatedDepList.list[i].lamportClockTime);
+
           //DATACENTER_ID
           memcpy(&replicatedDepList.list[i].dataCenterID,request+offset, sizeof(int));
           offset+=KEY_SIZE;
+          printf("Data center ID %d\n", replicatedDepList.list[i].dataCenterID);
             
-          replicatedDepList.count++;
         }
 
-
 		/*check for dependencies and commit the write if no dependecies*/
-		flag = checkDependency(replicatedDepList);
-		if (flag == 0) {
-			//add to the pending queue
-			assert(appendPendingQueue(replicatedDepList) == 1);
-		}
-		else {
-			/* -1 to indicate that this was a replicated write and not a client initiated write*/
-			commit(key, -1,dataCenterID, data);
-			/*reissue dep check for all the keys in the pending queue*/
-            checkPendingQueue(key,myLamportClockTime,myID);
-		}
+//		flag = checkDependency(replicatedDepList);
+//		if (flag == 0) {
+//			//add to the pending queue
+//			assert(appendPendingQueue(replicatedDepList) == 1);
+//		}
+//		else {
+//			/* -1 to indicate that this was a replicated write and not a client initiated write*/
+//			commit(key, -1,dataCenterID, data);
+//			/*reissue dep check for all the keys in the pending queue*/
+//            checkPendingQueue(key,myLamportClockTime,myID);
+//		}
 	}
 	return;
 }
@@ -398,10 +417,23 @@ void listening()
 int main(int argc, char** argv)
 {
 	int flag = 0;
-	flag = initDB();
-	assert(flag == 0);
-
-	initializeSockets();
-	listening();
+   
+    if(argc==2)
+    {
+        PORT=atoi(argv[1]);
+        PORT_D1=((PORT+1)==3?3:(PORT+1)%3)+60000;
+        PORT_D2=((PORT+2)==3?3:(PORT+2)%3)+60000;
+        PORT+=60000;
+        myID=PORT;
+        printf("My ID : %d (PORT)\n",PORT);
+        /*Make random*/
+        CASTPORT=PORT+10;
+        flag = initDB();
+        assert(flag == 0);
+        initializeSockets();
+        listening();
+    }
+    else
+         printf("Usage ./DataCenter PORT\n");
 	return 1;
 }
