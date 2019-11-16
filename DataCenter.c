@@ -73,10 +73,10 @@ void initMulticastSocket() {
 }
 
 
-void readFromDataStore(char* key)
+int readFromDataStore(char* key)
 {
 	char* data = malloc(sizeof(char) * 20);
-	readFromDB(key, (void*)data);
+	return readFromDB(key, (void*)data);
 }
 
 void writeToDataStore(char* key, int clientID, char* data)
@@ -135,8 +135,9 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
 		memcpy(key, request + offset, keyLength);
 		printf("Key: %s\n", key);
 
+        //TODO: and respond to the client with the key value
 		//read from DB
-		readFromDataStore(key); //TODO: and respond to the client with the key value
+        if(readFromDataStore(key)!=0) return; /*IF the read fails return*/
 
 		/*Check for the appropriate data center id*/
 		dataCenterID = readIDFromDB(key);
