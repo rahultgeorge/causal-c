@@ -15,8 +15,10 @@
  #include <time.h>
  #include <errno.h>
  #include <unistd.h>
+ #include <stdlib.h>
 
  #define KEY_SIZE 5
+ #define MAX_DATA 100
  #define ADDRESS "127.0.0.1"
 // #define PORT 60000
 // #define CASTPORT 60003
@@ -39,6 +41,7 @@
  #define REP_WRITE     "REP_WRIT"
 
  #define updateTime(x) x+1
+ #define max(a,b) a>b ? a : b
  
  #define MAX_MESSAGE_SIZE 2048
 

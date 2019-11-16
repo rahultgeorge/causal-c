@@ -15,7 +15,7 @@ typedef struct Dependency
 
 typedef struct Operation
 {
-    char key[KEY_SIZE];
+    char* key;
     char* data;
     int dataCenterID;
 }Operation;

@@ -29,6 +29,7 @@ int sendWriteRequest(char* key,char* data)
     offset+=sizeof(int);
      
     keyLength = strlen(key) + 1;
+    printf("%d\n", keyLength);
     memcpy(request + offset, &keyLength, sizeof(int));
     offset += sizeof(int);
 
@@ -87,6 +88,7 @@ int showOperations()
         printf("Enter key\n");
         scanf("%s", key);
         printf("Enter data\n");
+        //fgets(data,MAX_DATA,stdin);
         scanf("%s", data);
         sendWriteRequest(key, data);
         return 0;
@@ -106,7 +108,7 @@ int main(int argc,char **argv)
         assert(socketFD != 0);
         flag = connect(socketFD, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
         assert(flag == 0);
-        printf("Client %d Connected successfully", clientID);
+        printf("Client %d Connected successfully\n", clientID);
 
         /*TODO present menu for operations and send them to the data center */
         while (1)
