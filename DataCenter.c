@@ -1,7 +1,7 @@
 #include "Core.h"
 #include "DependencyUtilities.h"
 
-int serverSocketFD, multiCastSocketFD, clientLength, client_sock[MAX_CLIENTS];
+int serverSocketFD, multiCastSocketFD, multiCastSocketFD2, clientLength, client_sock[MAX_CLIENTS];
 struct sockaddr_in serverAddress, clientAddress, castToAddress, multiCastAddress;
 int PORT,PORT_D1,PORT_D2,CASTPORT;
 
@@ -53,23 +53,33 @@ void initializeSockets()
 	if (DEBUG) printf("Data Center Socket Listening\n");
 }
 
-void initMulticastSocket() {
+void initMulticastSocket(int port) {
 	//multicastSocketFD creation
-	int flag, on = 1;
-	multiCastSocketFD = socket(DOMAIN, SOCKET_TYPE, PROTOCOL);
+	int flag, on = 1, sock;
+	if (port == PORT_D1) sock = multiCastSocketFD;
+	else if (port == PORT_D2) sock = multiCastSocketFD2;
+	sock = socket(DOMAIN, SOCKET_TYPE, PROTOCOL);
 	//socket options - Reusable address 
-	flag = setsockopt(multiCastSocketFD, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+	flag = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 	assert(flag == 0);
 	//Reusable port
-	flag = setsockopt(multiCastSocketFD, SOL_SOCKET, SO_REUSEPORT, &on, sizeof(on));
+	flag = setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, &on, sizeof(on));
 	assert(flag == 0);
 	multiCastAddress.sin_family = DOMAIN;
 	multiCastAddress.sin_port = htons(CASTPORT); /*Port that is used to for multicasting*/
 	multiCastAddress.sin_addr.s_addr = INADDR_ANY;
 
 	//binding socket with this dataCenter's multi cast address
-	flag = bind(multiCastSocketFD, (const struct sockaddr *)&multiCastAddress, sizeof(multiCastAddress));
+	flag = bind(sock, (const struct sockaddr *)&multiCastAddress, sizeof(multiCastAddress));
 	assert(flag >= 0);
+
+	castToAddress.sin_family = AF_INET;
+	inet_pton(AF_INET, address, &(castToAddress.sin_addr));
+	castToAddress.sin_port = htons(port);
+
+	//connecting to the desired castToAddress
+	flag = connect(sock, (struct sockaddr *)&castToAddress, sizeof(castToAddress));
+	assert(flag == 0);
 }
 
 
@@ -92,16 +102,12 @@ int sendReplicatedWrite(char *address, int port, char *message)
 	int flag;
 	//create castToAddress from address and port
 	initMulticastSocket();
-	castToAddress.sin_family = AF_INET;
-	inet_pton(AF_INET, address, &(castToAddress.sin_addr));
-	castToAddress.sin_port = htons(port);
-
-	//connecting to the desired castToAddress
-	flag = connect(multiCastSocketFD, (struct sockaddr *)&castToAddress, sizeof(castToAddress));
-	assert(flag == 0);
-
+	if(port==PORT_D1)
 	send(multiCastSocketFD, message, MAX_MESSAGE_SIZE, 0);
-	close(multiCastSocketFD);
+	else if (port == PORT_D2)
+		send(multiCastSocketFD2, message, MAX_MESSAGE_SIZE, 0);
+	
+	//close(multiCastSocketFD);
 
 	/*TODO: check for response and then return*/
 	return 1;
