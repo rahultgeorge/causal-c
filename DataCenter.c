@@ -107,11 +107,13 @@ int sendReplicatedWrite(char *address, int port, char *message)
 
 void messageHandler(char* request, char* clientIPAddress, int port, int socket)
 {
-	int offset = 0, keyLength, dataLength;
+	int offset = 0, keyLength, dataLength,i,resp=-1,flag=-1;
 	int dataCenterID = -1;
 	signed int clientID = -1;
 	char* key, *data;
 	Dependency dependency;
+    DependencyList replicatedDepList;
+    
 	/*READ REQUEST*/
 	if (strncmp(request, READ_REQUEST, MESSAGE_HEADER_LENGTH) == 0)
 	{
@@ -151,87 +153,144 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
 	else if (strncmp(request, WRITE_REQUEST, MESSAGE_HEADER_LENGTH) == 0)
 	{
 		offset += MESSAGE_HEADER_LENGTH;
-		//reading the clientID
+		//Reading the clientID
 		memcpy(&clientID, request + offset, sizeof(int));
 		offset += sizeof(int);
 		printf("Client  ID %d\n", clientID);
-		//reading the key length
+		//Reading the key length
 		memcpy(&keyLength, request + offset, sizeof(int));
 		offset += sizeof(int);
 		printf("Key length %d\n", keyLength);
-		//reading the key
+		//Reading the key
 		key = (char*)malloc(sizeof(char)*keyLength);
 		memcpy(key, request + offset, keyLength);
 		offset += keyLength;
-		//reading the data length
+		//Reading the data length
 		memcpy(&dataLength, request + offset, sizeof(int));
 		offset += sizeof(int);
 		printf("Key: %s\n", key);
-		//reading the data value
+		//Reading the data value
 		data = (char*)malloc(sizeof(char)*dataLength);
 		memcpy(data, request + offset, dataLength);
 		printf("Data: %s\n", data);
-
-		writeToDataStore(key, clientID, data); //TODO: respond to the client with ACK
-		/* Write committed to DB, now send REP_WRTITE to other data centers */
-		//TODO: attach the dependency list of this client to this request
-		memcpy(request, REP_WRITE, MESSAGE_HEADER_LENGTH);
-		int resp = sendReplicatedWrite(ADDRESS, PORT_D1, request);
+       
+        /*time should be increased by 1 after a write*/
+        updateTime(myLamportClockTime);
+        
+        /* Write committed to DB, now send REP_WRTITE to other data centers */
+        //TODO: respond to the client with ACK (Why?)
+		writeToDataStore(key, clientID, data);
+		
+        /*Clear the request(?)*/
+        /* HEADER KEY_LENGTH KEY DATA_LENGTH DATA DATACENTER_ID DEPLIST */
+        memcpy(request, REP_WRITE, MESSAGE_HEADER_LENGTH);
+        offset=MESSAGE_HEADER_LENGTH;
+        
+        //Write the key length
+        memcpy(request + offset,&keyLength, sizeof(int));
+        offset += sizeof(int);
+        //Write the key
+        memcpy(request + offset,key,  keyLength);
+        offset += keyLength;
+        //Write the data length
+        memcpy(request + offset, &dataLength, sizeof(int));
+        offset += sizeof(int);
+        //Writing the data value
+        memcpy(request + offset,data,  dataLength);
+        offset+=dataLength;
+        //Writing the data center_id
+        memcpy(request + offset,&myID,  sizeof(int));
+        offset+=sizeof(int);
+        
+        
+        /*Including the current dependency list in the message
+          Format:  LIST_SIZE [KEY TIMESTAMP DATACENTER_ID] */
+        //LIST SIZE
+        memcpy(request+offset,&clientDependenciesLists[clientID].count, sizeof(int));
+        offset+=sizeof(int);
+        for(i=0;i<clientDependenciesLists[clientID].count;i++)
+        {
+          //Writing KEY
+          memcpy(request+offset,clientDependenciesLists[clientID].list[i].key, KEY_SIZE);
+          offset+=KEY_SIZE;
+          //Writing Lamport Clock Time
+          memcpy(request+offset,&clientDependenciesLists[clientID].list[i].lamportClockTime, sizeof(int));
+          offset+=sizeof(int);
+          //Writing DATACENTER_ID
+          memcpy(request+offset,&clientDependenciesLists[clientID].list[i].dataCenterID, sizeof(int));
+          offset+=KEY_SIZE;
+        }
+        
+		resp = sendReplicatedWrite(ADDRESS, PORT_D1, request);
 		assert(resp == 1);
 		resp = sendReplicatedWrite(ADDRESS, PORT_D2, request);
 		assert(resp == 1);
 
-		/*clear dependency list and add this wirte*/
+		/*clear dependency list and add this write*/
 		clearDependencyList(clientID);
 		/*create new dependency and add to the DPLISTS[clientID]*/
 		dependency.key = key;
-		dependency.lamportClockTime = myLamportClockTime++; /*time should be increased by 1 after a write*/
-		dependency.dataCenterID = dataCenterID;
+		dependency.lamportClockTime = myLamportClockTime;
+		dependency.dataCenterID = myID;
 		assert(appendClientDependencyList(clientID, dependency) == 1);
 	}
-	/*REPLICATED WRITE REQUEST*/
+	/*REPLICATED WRITE */
 	else if (strncmp(request, REP_WRITE, MESSAGE_HEADER_LENGTH) == 0)
 	{
+        
 		offset += MESSAGE_HEADER_LENGTH;
-		//reading the key length
+		//Reading the key length
 		memcpy(&keyLength, request + offset, sizeof(int));
 		offset += sizeof(int);
 		printf("Key length %d\n", keyLength);
-		//reading the key
+		//Reading the key
 		key = (char*)malloc(sizeof(char)*keyLength);
 		memcpy(key, request + offset, keyLength);
 		offset += keyLength;
-		//reading data length
+		//Reading data length
 		memcpy(&dataLength, request + offset, sizeof(int));
 		offset += sizeof(int);
 		printf("Key: %s\n", key);
-		//reading data
+		//Reading data
 		data = (char*)malloc(sizeof(char)*dataLength);
 		memcpy(data, request + offset, dataLength);
+        offset+=dataLength;
 		printf("Data: %s\n", data);
+        //Reading the data center ID
+        memcpy(request + offset,&dataCenterID,  sizeof(int));
+        offset+=sizeof(int);
 		//TODO: read the dependency list from the message
-		DependencyList replicatedDepList;
-
-
+		
+        
+        memcpy(&replicatedDepList.count,request+offset,sizeof(int));
+        offset+=sizeof(int);
+        for(i=0;i<clientDependenciesLists[clientID].count;i++)
+        {
+          //KEY
+          memcpy(replicatedDepList.list[i].key,request+offset, KEY_SIZE);
+          offset+=KEY_SIZE;
+          //Lamport Clock Time
+          memcpy(&replicatedDepList.list[i].lamportClockTime,request+offset, sizeof(int));
+          offset+=sizeof(int);
+          //DATACENTER_ID
+          memcpy(&replicatedDepList.list[i].dataCenterID,request+offset, sizeof(int));
+          offset+=KEY_SIZE;
+            
+          replicatedDepList.count++;
+        }
 
 
 		/*check for dependencies and commit the write if no dependecies*/
-		int flag = checkDependency(replicatedDepList);
+		flag = checkDependency(replicatedDepList);
 		if (flag == 0) {
 			//add to the pending queue
 			assert(appendPendingQueue(replicatedDepList) == 1);
 		}
 		else {
 			/* -1 to indicate that this was a replicated write and not a client initiated write*/
-			writeToDataStore(key, -1, data); /*nice job*/
+			commit(key, -1,dataCenterID, data);
 			/*reissue dep check for all the keys in the pending queue*/
-			for (int i = 0; i < pendingCount; i++) {
-
-				flag = checkDependency(DependingQueue[i]->list); // check if this works??
-				if (flag == 1) {
-					//writeToDataStore(newkey, -1, newdata);
-				}
-			}
+            checkPendingQueue(key,myLamportClockTime,myID);
 		}
 	}
 	return;
@@ -336,7 +395,7 @@ void listening()
 
 
 /*TODO -  We can switch to epoll  if we get the time. What do you think? NAAAAAAAAAAH....we have better things to do*/
-int main()
+int main(int argc, char** argv)
 {
 	int flag = 0;
 	flag = initDB();

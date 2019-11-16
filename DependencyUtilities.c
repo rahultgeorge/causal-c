@@ -16,14 +16,14 @@ void clearDependencyList(int clientID)
 	int i;
 	for (i = 0; i < clientDependenciesLists[clientID].count; i++) {
 		clientDependenciesLists[clientID].list->key = NULL;
-		clientDependenciesLists[clientID].list->dataCenterID = NULL;
-		clientDependenciesLists[clientID].list->lamportClockTime = NULL;
+		clientDependenciesLists[clientID].list->dataCenterID = 0;
+		clientDependenciesLists[clientID].list->lamportClockTime = 0;
 	}
 	clientDependenciesLists[clientID].count = 0;
 }
 
 
-int checkDependency(DependencyList replicatedDepList)
+int checkDependency(PendingDependencyList replicatedDepList)
 {
 	/*Check dependencies*/
 	int i, j, k, flag = 0;
@@ -61,8 +61,36 @@ int appendPendingQueue(DependencyList list) {
 	return 0;
 }
 
+
+int removeFromPendingQueue(int index)
+{
+   for(int i=0;i<pendingCount;i++)
+      if(i==index)
+      {
+          
+          
+          break;
+      }
+    --pendingCount;
+    return 0;
+}
+
 /* Call check dependency on every dep list and commit when dep check passes*/
 int checkPendingQueue(char* key, int timestamp, int datacenter_id) {
-
-
+    int i=0,flag=0;
+    for(i=0;i<pendingCount;i++)
+    {
+        flag=1;
+        if(checkDependency(pendingQueue[i])==1)
+            flag=1;
+        else
+           /*TODO - Check with this operation */
+            printf("Compared with the current replicated write performed\n");
+        if(flag==1)
+        {
+            removeFromPendingQueue(i);
+            
+        }
+    }
+    return 0;
 }

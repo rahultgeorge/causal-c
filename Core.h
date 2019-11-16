@@ -16,6 +16,7 @@
  #include <errno.h>
  #include <unistd.h>
 
+#define  KEY_SIZE 5
  #define ADDRESS "127.0.0.1"
  #define PORT 60000
  #define CASTPORT 60003
@@ -27,6 +28,7 @@
  #define PROTOCOL 0
  #define MAX_CLIENTS 10
  #define DEBUG 1
+ #define KEY_SIZE 5
 /*Client TAGS */
  #define MESSAGE_HEADER_LENGTH 8
  #define READ_REQUEST  "READ_REQ"

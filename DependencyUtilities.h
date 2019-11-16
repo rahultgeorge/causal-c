@@ -1,19 +1,23 @@
 #ifndef _DEPENDENCY_UTILITIES_H
-
+#include <stddef.h>
 #define MAX_DEP 10
 #define MAX_CLIENTS 10
 #define MAX_PENDING 100
-
-DependencyList pendingQueue[MAX_PENDING];
-int pendingCount;
-DependencyList clientDependenciesLists[MAX_CLIENTS];
+#define KEY_SIZE 5
 
 typedef struct Dependency
 {
 	char* key;
 	int lamportClockTime;
-	int dataCenterID; //Yashasvi says port; I don't agree.
+	int dataCenterID;
 }Dependency;
+
+typedef struct Operation
+{
+    char key[KEY_SIZE];
+    char* value;
+    int dataCenterID;
+}Operation;
 
 /* Create a list of dependency lists(MAX Clients)
    Initialize somewhere
@@ -22,8 +26,15 @@ typedef struct DependencyList
 {
 	Dependency list[MAX_DEP];  //Limit this as well
 	int count; //for the number of DEPS
+    Operation operation[MAX_DEP]; // Operation that needs to be performed if the dependency check is satisified
 }DependencyList;
 
+
+
+
+DependencyList pendingQueue[MAX_PENDING];
+int pendingCount;
+DependencyList clientDependenciesLists[MAX_CLIENTS];
 
 int appendClientDependencyList(int clientID, Dependency dependency);
 
