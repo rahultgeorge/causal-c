@@ -19,6 +19,7 @@
 
  #define KEY_SIZE 5
  #define MAX_DATA 100
+ #define MAX_PENDING 100
  #define ADDRESS "127.0.0.1"
  #define DIR_PATH_1 "D1"
  #define DIR_PATH_2 "D2"
@@ -27,12 +28,12 @@
 // #define CASTPORT 60003
 // #define PORT_D1 60001
 // #define PORT_D2 60002
- #define DEBUG 1
+
  #define DOMAIN AF_INET
  #define SOCKET_TYPE SOCK_STREAM
  #define PROTOCOL 0
  #define MAX_CLIENTS 10
- #define DEBUG 1
+ #define DEBUG 0
  #define KEY_SIZE 5
 /*Client TAGS */
  #define MESSAGE_HEADER_LENGTH 8
@@ -40,6 +41,7 @@
  #define WRITE_REQUEST "WRIT_REQ"
  #define WRITE_ACK     "WRIT_ACK"
  #define WRITE_NACK    "WRIT_NCK"
+ #define READ_REPLY    "READ_VAL"
  /* Datacenter TAGS  */
  #define REP_WRITE     "REP_WRIT"
 

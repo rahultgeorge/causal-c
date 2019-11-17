@@ -52,7 +52,7 @@ int sendWriteRequest(char* key,char* data)
 int sendReadRequest(char* key)
 {
     int offset = MESSAGE_HEADER_LENGTH, keyLength = -1;
-    char request[MAX_MESSAGE_SIZE];
+    char request[MAX_MESSAGE_SIZE],reply[MAX_MESSAGE_SIZE];
     
     memcpy(request, READ_REQUEST, MESSAGE_HEADER_LENGTH);
     
@@ -67,6 +67,9 @@ int sendReadRequest(char* key)
     offset += keyLength;
 
     send(socketFD, request, MAX_MESSAGE_SIZE, 0);
+    /*Read the value*/
+    //read(socketFD,reply,MAX_MESSAGE_SIZE);
+    //printf("READ: %s\n",reply);
     return 0;
 }
 

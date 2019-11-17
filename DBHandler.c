@@ -9,7 +9,7 @@ int commit(char* key, int client_id,int center_id, void* data)
 	char *zErrMsg = 0;
     
 	int rc = sqlite3_open(DB_NAME, &db);
-	asprintf(&query, "insert into CausalTable (KEY, CLIENT_ID,CENTER_ID, VALUE) values ('%s',%d, %d,'%s');", key,center_id, client_id, ((char *)data));
+	asprintf(&query, "insert into CausalTable (KEY, CLIENT_ID,CENTER_ID, VALUE) values ('%s',%d, %d,'%s');", key, client_id,center_id, ((char *)data));
 
 	sqlite3_prepare_v2(db, query, strlen(query), &stmt, NULL);
 
@@ -43,7 +43,7 @@ int readFromDB(char* key, void* data)
 		return -1;
 	}
 
-	printf("Retrieving value\n");
+	if(DEBUG) printf("Retrieving value\n");
 
 	//Get count
 	asprintf(&query, "SELECT VALUE FROM CausalTable WHERE KEY ='%s';", key);
@@ -94,7 +94,7 @@ int readIDFromDB(char* key)
     }
 
 
-    printf("Retrieving ID\n");
+    if(DEBUG)  printf("Retrieving ID\n");
 
     //Get DATACENTER ID of the replicated write it received
     asprintf(&query, "SELECT CENTER_ID FROM CausalTable WHERE KEY ='%s' AND CLIENT_ID=-1;", key);
@@ -104,7 +104,7 @@ int readIDFromDB(char* key)
 
     if (rc == SQLITE_ROW)
     {
-        printf("ID %d\n", sqlite3_column_int(stmt, 0));
+        if(DEBUG)  printf("ID %d\n", sqlite3_column_int(stmt, 0));
         id=sqlite3_column_int(stmt,0);
     }
 

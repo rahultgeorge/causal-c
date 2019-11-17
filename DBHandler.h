@@ -5,7 +5,7 @@
 #include <stdlib.h> 
 #include <sqlite3.h> 
 #include <string.h>
-
+#define DEBUG 0
 int initDB();
 
 /* Commits the write to the data store */

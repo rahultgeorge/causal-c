@@ -1,12 +1,26 @@
 #include "DependencyUtilities.h"
 
-
+void displayDependencyList(DependencyList list)
+{
+    printf("DEP LIST: ");
+    for(int i=0;i<list.count;i++)
+    {
+        printf("<%s(%d,%d)>  ",list.list[i].key,list.list[i].lamportClockTime,list.list[i].dataCenterID);
+    }
+    printf("\n");
+}
 
 int appendClientDependencyList(int clientID, Dependency dependency) {
 	/*Add dependency to the dependency list of that client*/
-	int count = clientDependenciesLists[clientID].count++;
+    printf("Before appending to Client %d 's dependency list\n",clientID);
+    displayDependencyList(clientDependenciesLists[clientID]);
+    printf("Appending to Client %d 's dependency list\n",clientID);
+	int count = clientDependenciesLists[clientID].count;
 	if (count > MAX_DEP) return 0;
 	clientDependenciesLists[clientID].list[count] = dependency;
+    clientDependenciesLists[clientID].count++;
+    printf("After appending to Client %d 's dependency list\n",clientID);
+    displayDependencyList(clientDependenciesLists[clientID]);
 	return 1;
 }
 
@@ -26,7 +40,7 @@ void clearDependencyList(int clientID)
 int checkDependency(DependencyList replicatedDepList)
 {
 	/*Check dependencies*/
-	int i, j, k, flag = 0,keyFound=0;
+	int i, j, k, flag = 0;
     if(replicatedDepList.count==0)
         flag=1;
     printf("Checking dependencies\n");
@@ -43,17 +57,27 @@ int checkDependency(DependencyList replicatedDepList)
 					flag = 1;
 					break;
 				}
-                else if(strcmp(clientDependenciesLists[j].list[k].key, replicatedDepList.list[i].key) == 0)
-                        keyFound=1;
+         
 			}
 			if (flag == 1) break;
 		}
-		if (flag == 0 && keyFound==1) {
-			return flag;
-		}
+        
+        for(j=0;j<replicatedWriteCount;j++)
+        {
+
+          if (strcmp(replicatedWritesDepList.list[j].key, replicatedDepList.list[i].key) == 0
+                              && replicatedWritesDepList.list[j].lamportClockTime >= replicatedDepList.list[i].lamportClockTime){
+          //                    && replicatedWritesDepList.list[j].dataCenterID == replicatedDepList.list[i].dataCenterID) {
+                              flag = 1;
+                              break;
+                          }
+        }
+        
+        
+		if (flag == 0 )
+			break;
 	}
-    if(keyFound==0)
-        flag=1;
+
 	return flag;
 }
 
@@ -70,19 +94,19 @@ int appendPendingQueue(DependencyList list) {
                 for(j=0;j<list.count;j++)
                     pendingQueue[i].list[j] = list.list[j];
 				flag = 1;
+                break;
 			}
 		}
         
-		if (flag == 0) {
-			pendingQueue[pendingCount].count = list.count;
-			pendingQueue[pendingCount].operation = list.operation;
-            for(j=0;j<list.count;j++)
-                pendingQueue[i].list[j] = list.list[j];
-		}
+//		if (flag == 0) {
+//			pendingQueue[pendingCount].count = list.count;
+//			pendingQueue[pendingCount].operation = list.operation;
+//            for(j=0;j<list.count;j++)
+//                pendingQueue[i].list[j] = list.list[j];
+//		}
 		pendingCount++;
-		return 1;
 	}
-	return 0;
+	return flag;
 }
 
 

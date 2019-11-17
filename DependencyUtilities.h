@@ -37,6 +37,9 @@ typedef struct DependencyList
 DependencyList pendingQueue[MAX_PENDING];
 int pendingCount;
 DependencyList clientDependenciesLists[MAX_CLIENTS];
+/*To deal with consecutive writes*/
+int replicatedWriteCount;
+DependencyList replicatedWritesDepList;
 
 int appendClientDependencyList(int clientID, Dependency dependency);
 
