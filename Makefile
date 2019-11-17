@@ -1,7 +1,7 @@
 CC=gcc
 
 datacenter: datastore DependencyUtilities.o
-	        $(CC) -lsqlite3 DataCenter.c DependencyUtilities.o DBHandler -o DataCenter
+	        $(CC)    DataCenter.c DependencyUtilities.o DBHandler -lsqlite3 -o DataCenter
 
 
 datastore:  
