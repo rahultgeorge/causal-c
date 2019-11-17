@@ -327,7 +327,7 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
           printf("Data center ID %d\n", replicatedDepList.list[i].dataCenterID);
             
         }
-        printf("*******************DEP-LIST******************\n");
+        printf("*******************REPLICATED WRITE ENDS******************\n");
 
         
         /*Add operation*/
@@ -340,6 +340,7 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
 		flag = checkDependency(replicatedDepList);
 		if (flag == 0) {
 			//add to the pending queue
+            printf("Add to pending queue\n");
 			assert(appendPendingQueue(replicatedDepList) == 1);
 		}
 		else {
@@ -351,7 +352,7 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
 			/*reissue dep check for all the keys in the pending queue*/
             //checkPendingQueue(key,myLamportClockTime,myID);
 
-			for (i = 0; i <= pendingCount; i++)
+			for (i = 0; i < pendingCount; i++)
 			{
 				if (checkDependency(pendingQueue[i]) == 1) {
 					removeFromPendingQueue(i);
@@ -473,6 +474,12 @@ int main(int argc, char** argv)
         PORT_D2=((PORT+2)==3?3:(PORT+2)%3)+60000;
         PORT+=60000;
         myID=PORT%60000;
+        if(myID==1)
+            assert(chdir(DIR_PATH_1)==0);
+        else if(myID==2)
+            assert(chdir(DIR_PATH_2)==0);
+        else
+            assert(chdir(DIR_PATH_3)==0);
         printf("My ID : %d (PORT MOD 60000)\n",myID);
         /*Make random*/
         CASTPORT=PORT+10;

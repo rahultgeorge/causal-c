@@ -97,7 +97,7 @@ int readIDFromDB(char* key)
     printf("Retrieving ID\n");
 
     //Get DATACENTER ID of the replicated write it received
-    asprintf(&query, "SELECT CENTER_ID FROM CausalTable WHERE KEY ='%s' AND ID=-1;", key);
+    asprintf(&query, "SELECT CENTER_ID FROM CausalTable WHERE KEY ='%s' AND CLIENT_ID=-1;", key);
 
     sqlite3_prepare_v2(db, query, strlen(query), &stmt, NULL);
     rc = sqlite3_step(stmt);

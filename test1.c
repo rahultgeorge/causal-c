@@ -344,7 +344,7 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
 			printf("Data center ID %d\n", replicatedDepList.list[i].dataCenterID);
 
 		}
-		printf("*******************DEP-LIST******************\n");
+		printf("*******************Replicated-Write-Ends******************\n");
 
 
 		/*Add operation*/
@@ -357,6 +357,7 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
 		flag = checkDependency(replicatedDepList);
 		if (flag == 0) {
 			//add to the pending queue
+            printf("Add to pending queue\n");
 			assert(appendPendingQueue(replicatedDepList) == 1);
 		}
 		else {

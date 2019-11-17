@@ -59,7 +59,7 @@ int sendReadRequest(char* key)
     memcpy(request+offset,&clientID, sizeof(int));
     offset+=sizeof(int);
          
-    keyLength = strlen(key);
+    keyLength = strlen(key)+1;
     memcpy(request + offset, &keyLength, sizeof(int));
     offset += sizeof(int);
 

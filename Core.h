@@ -20,6 +20,9 @@
  #define KEY_SIZE 5
  #define MAX_DATA 100
  #define ADDRESS "127.0.0.1"
+ #define DIR_PATH_1 "D1"
+ #define DIR_PATH_2 "D2"
+ #define DIR_PATH_3 "D3"
 // #define PORT 60000
 // #define CASTPORT 60003
 // #define PORT_D1 60001

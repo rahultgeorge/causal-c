@@ -1,5 +1,6 @@
 #ifndef _DEPENDENCY_UTILITIES_H
 #include <stddef.h>
+#include <stdio.h>
 #define MAX_DEP 10
 #define MAX_CLIENTS 10
 #define MAX_PENDING 100

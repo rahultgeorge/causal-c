@@ -26,26 +26,34 @@ void clearDependencyList(int clientID)
 int checkDependency(DependencyList replicatedDepList)
 {
 	/*Check dependencies*/
-	int i, j, k, flag = 0;
+	int i, j, k, flag = 0,keyFound=0;
+    if(replicatedDepList.count==0)
+        flag=1;
+    printf("Checking dependencies\n");
 	//repDPList may have multiple dependencies so check for all
 	for (i = 0; i < replicatedDepList.count; i++) {
 		flag = 0;
 		for (j = 0; j < MAX_CLIENTS; j++) {
 			for (k = 0; k < clientDependenciesLists[j].count; k++) {
+                printf("%d %d\n",strlen(clientDependenciesLists[j].list[k].key),strlen(replicatedDepList.list[i].key));
+
 				if (strcmp(clientDependenciesLists[j].list[k].key, replicatedDepList.list[i].key) == 0
-					&& clientDependenciesLists[j].list[k].lamportClockTime >= replicatedDepList.list[i].lamportClockTime
-					&& clientDependenciesLists[j].list[k].dataCenterID == replicatedDepList.list[i].dataCenterID) {
+                    && clientDependenciesLists[j].list[k].lamportClockTime >= replicatedDepList.list[i].lamportClockTime){
+//					&& clientDependenciesLists[j].list[k].dataCenterID == replicatedDepList.list[i].dataCenterID) {
 					flag = 1;
 					break;
 				}
-
+                else if(strcmp(clientDependenciesLists[j].list[k].key, replicatedDepList.list[i].key) == 0)
+                        keyFound=1;
 			}
 			if (flag == 1) break;
 		}
-		if (flag == 0) {
+		if (flag == 0 && keyFound==1) {
 			return flag;
 		}
 	}
+    if(keyFound==0)
+        flag=1;
 	return flag;
 }
 
