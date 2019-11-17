@@ -18,10 +18,10 @@ clean:
 			rm -f Client DataCenter DBHandler CausalDB BroadcastDaemonM
 			
 Test1: client datastore DependencyUtilities.o
-		$(CC) -lsqlite3 Test1.c DependencyUtilities.o DBHandler -o Test1
+		$(CC) test1.c DependencyUtilities.o DBHandler -lsqlite3 -o Test1
 
 Test2: client datastore DependencyUtilities.o
-		$(CC) -lsqlite3 Test1.c DependencyUtilities.o DBHandler -o Test2
+		$(CC) -lsqlite3 Test2.c DependencyUtilities.o DBHandler -o Test2
 
 all:  client datacenter
 
