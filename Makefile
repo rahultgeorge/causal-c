@@ -1,6 +1,6 @@
 CC=gcc
 
-datacenter: datastore DependencyUtilities.o
+datacenter: client datastore DependencyUtilities.o
 	        $(CC) -lsqlite3 DataCenter.c DependencyUtilities.o DBHandler -o DataCenter
 
 
@@ -10,9 +10,19 @@ datastore:
 bdaemon:   
 			$(CC) -lsqlite3 DBHandler BroadcastDaemonM.c -o BroadcastDaemonM
 
-client:   datacenter
+client:
 	      $(CC) Client.c -o Client
-	      
+
+
+clean:
+			rm -f Client DataCenter DBHandler CausalDB BroadcastDaemonM
+			
+Test1: client datastore DependencyUtilities.o
+		$(CC) -lsqlite3 Test1.c DependencyUtilities.o DBHandler -o Test1
+
+Test2: client datastore DependencyUtilities.o
+		$(CC) -lsqlite3 Test1.c DependencyUtilities.o DBHandler -o Test2
+
 all:  client datacenter
 
 
