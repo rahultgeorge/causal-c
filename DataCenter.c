@@ -388,7 +388,7 @@ void listening()
 	{
 		FD_ZERO(&readfds);
 		FD_SET(serverSocketFD, &readfds);
-
+        max_sd=serverSocketFD;
 		for (i = 0; i < MAX_CLIENTS; i++)
 		{
 			//Socket descriptor  
