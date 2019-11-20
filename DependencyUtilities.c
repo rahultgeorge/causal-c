@@ -3,7 +3,8 @@
 void displayDependencyList(DependencyList list)
 {
     printf("DEP LIST: ");
-    for(int i=0;i<list.count;i++)
+    int i;
+    for(i=0;i<list.count;i++)
     {
         printf("<%s(%d,%d)>  ",list.list[i].key,list.list[i].lamportClockTime,list.list[i].dataCenterID);
     }

@@ -6,8 +6,8 @@ struct sockaddr_in serverAddress, clientAddress, castToAddress, multiCastAddress
 int PORT,PORT_D1,PORT_D2,CASTPORT;
 int connectedMultiCast=-1;
 /*FOR TEST ONLY*/
-int delayAfterThree = 0;
-unsigned int microseconds = 20000000; //20 secs
+int delayAfterOne = 0;
+unsigned int microseconds = 120000000; //120 secs
 
 /*DATA CENTER SPECIFIC INFORMATION*/
 int myID ; /*PORT*/
@@ -251,16 +251,16 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
          /*CREATING TEST CASE: the 4th replicated write will be delayed*/
          resp = sendReplicatedWrite(ADDRESS, PORT_D1, request);
          assert(resp == 1);
-         delayAfterThree++;
+         delayAfterOne++;
 
-         if (delayAfterThree == 3) {
+         if (delayAfterOne == 1) {
              usleep(microseconds);
              resp = sendReplicatedWrite(ADDRESS, PORT_D2, request);
          }
          else
              resp = sendReplicatedWrite(ADDRESS, PORT_D2, request);
          assert(resp == 1);
-         delayAfterThree++;
+         delayAfterOne++;
          /*TEST CASE IS NOT GENERAL...USE ONLY FOR PARTICULAR BEHAVIOUR TESTING*/
          //end test case
 
