@@ -71,7 +71,6 @@ int readFromDB(char* key, void* data)
 
 	sqlite3_finalize(stmt);
 	return 0;
-
 }
 
 /*RETURN THE ID*/

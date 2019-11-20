@@ -75,7 +75,7 @@ int sendReadRequest(char* key)
 int showOperations()
 {
     int n = -1;
-    char data[20], key[20];
+    char *data, key[KEY_SIZE];
     printf("Enter 1 to read\n 2 to write\n 3 to exit\n");
     scanf("%d", &n);
     if (n == 1)

@@ -88,7 +88,7 @@ char* readFromDataStore(char* key)
 {
 	char* data = malloc(sizeof(char) * 20);
 	int i = readFromDB(key, (void*)data);
-	//actually this should be taken care of in the readFromDB
+    printf("Read from DB %d\n",i);
 	if (i != -1) {
 		return data;
 	}
@@ -123,7 +123,7 @@ int sendReplicatedWrite(char *address, int port, char *message)
 
 void messageHandler(char* request, char* clientIPAddress, int port, int socket)
 {
-	int offset = 0, keyLength, dataLength,i,resp=-1,flag=-1,lamportClockTimeReceived=-10;
+	int offset = 0, keyLength, dataLength,i,resp=-1,respLen=-1,flag=-1,lamportClockTimeReceived=-10;
 	int dataCenterID = -1;
 	signed int clientID = -1;
 	char* key, *data;
@@ -151,18 +151,19 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
 		if(DEBUG) printf("Key: %s\n", key);
 
         printf("READ(%s)\n",key);
-        // and respond to the client with the key value
-		//read from DB
+        
+        // Respond to the client with the key value
 		char* retdata = readFromDataStore(key);
-		int respLen = strlen(retdata);
-		retdata[respLen] = '\0';
 		if (retdata == NULL) {
+            //printf("NULL\n");
+			memcpy(response, "NULL\0", 5);
+		}
+		else{
+            respLen= strlen(retdata)+1;
+            retdata[MAX_MESSAGE_SIZE] = '\0';
 			memcpy(response, retdata, respLen);
 		}
-		else {
-			memcpy(response, retdata, respLen);
-		}
-		send(socket, response, strlen(response), 0);
+		send(socket, response,MAX_MESSAGE_SIZE, 0);
         
 		/*Check for the appropriate data center id*/
 		dataCenterID = readIDFromDB(key);
