@@ -17,42 +17,42 @@ int myLamportClockTime = 0;
 /*Initalizes the datacenter "Server Socket"(listening socket) and all the client sockets */
 void initializeSockets()
 {
-
+    
     int flag = -1, on = 1, i;
-
+    
     //initializing all client sockets to 0
     for (i = 0; i < MAX_CLIENTS; i++)
     {
         client_sock[i] = 0;
     }
-
+    
     //listening for connections on this socket
     serverSocketFD = socket(DOMAIN, SOCKET_TYPE, PROTOCOL);
     assert(serverSocketFD != 0);
     if (DEBUG) printf("Data Center Socket Created\n");
-
+    
     //socket options - Reusable address
     flag = setsockopt(serverSocketFD, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
     assert(flag == 0);
     //Reusable port
     flag = setsockopt(serverSocketFD, SOL_SOCKET, SO_REUSEPORT, &on, sizeof(on));
     assert(flag == 0);
-
+    
     //Server Address
     serverAddress.sin_family = DOMAIN;
     serverAddress.sin_port = htons(PORT);
     serverAddress.sin_addr.s_addr = INADDR_ANY;
-
+    
     //binding socket
     flag = bind(serverSocketFD, (const struct sockaddr *)&serverAddress, sizeof(serverAddress));
     assert(flag == 0);
-
+    
     if (DEBUG) printf("Data Center Socket Bound\n");
-
+    
     //listening with max 5 pending connections
     flag = listen(serverSocketFD, 5);
     assert(flag == 0);
-
+    
     if (DEBUG) printf("Data Center Socket Listening\n");
 }
 
@@ -71,7 +71,7 @@ void initMulticastSocket(char* address,int port) {
     castToAddress.sin_family = AF_INET;
     inet_pton(AF_INET, address, &(castToAddress.sin_addr));
     castToAddress.sin_port = htons(port);
-
+    
     //connecting to the desired castToAddress
     flag = connect(sock, (struct sockaddr *)&castToAddress, sizeof(castToAddress));
     assert(flag == 0);
@@ -87,12 +87,12 @@ void initMulticastSocket(char* address,int port) {
 
 char* readFromDataStore(char* key)
 {
-	char* data = malloc(sizeof(char) * 20);
-	int i = readFromDB(key, (void*)data);
-	if (i != -1) {
-		return data;
-	}
-	return NULL;
+    char* data = malloc(sizeof(char) * 20);
+    int i = readFromDB(key, (void*)data);
+    if (i != -1) {
+        return data;
+    }
+    return NULL;
 }
 
 void writeToDataStore(char* key, int clientID, char* data)
@@ -108,7 +108,7 @@ int sendReplicatedWrite(char *address, int port, char *message)
     int flag;
     //create castToAddress from address and port
     if(connectedMultiCast==-1)
-     initMulticastSocket(address, port);
+        initMulticastSocket(address, port);
     //printf("Port %d\n",port);
     if(port==PORT_D1)
         flag=send(multiCastSocketFD, message, MAX_MESSAGE_SIZE, 0);
@@ -116,18 +116,18 @@ int sendReplicatedWrite(char *address, int port, char *message)
         flag=send(multiCastSocketFD2, message, MAX_MESSAGE_SIZE, 0);
     assert(flag>0);
     //close(multiCastSocketFD);
-
+    
     /*TODO: check for response and then return*/
     return 1;
 }
 
 void messageHandler(char* request, char* clientIPAddress, int port, int socket)
 {
-    int offset = 0, keyLength, dataLength,i,resp=-1,flag=-1,lamportClockTimeReceived=-10;
+    int offset = 0, keyLength, dataLength,i,resp=-1,respLen=-1,flag=-1,lamportClockTimeReceived=-10;
     int dataCenterID = -1;
     signed int clientID = -1;
     char* key, *data;
-	char response[MAX_MESSAGE_SIZE];
+    char response[MAX_MESSAGE_SIZE];
     Dependency dependency;
     DependencyList replicatedDepList;
     printf("My lamport clock time : %d\n",myLamportClockTime);
@@ -139,38 +139,39 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
         memcpy(&clientID, request + offset, sizeof(int));
         offset += sizeof(int);
         if(DEBUG) printf("Client  ID %d\n", clientID);
-
+        
         //reading key length
         memcpy(&keyLength, request + offset, sizeof(int));
         offset += sizeof(int);
         if(DEBUG) printf("Key length %d\n", keyLength);
-
+        
         //reading key
         key = (char*)malloc(sizeof(char)*keyLength);
         memcpy(key, request + offset, keyLength);
         if(DEBUG) printf("Key: %s\n", key);
-
+        
         printf("READ(%s)\n",key);
-        //and respond to the client with the key value
-        //read from DB
-		char* retdata = readFromDataStore(key);
-		int respLen = strlen(retdata);
-		retdata[respLen] = '\0';
-		if (retdata == NULL) {
-			memcpy(response, retdata, respLen);
-		}
-		else {
-			memcpy(response, retdata, respLen);
-		}
-		send(socket, response, strlen(response), 0);
-
+        
+        // Respond to the client with the key value
+        char* retdata = readFromDataStore(key);
+        if (retdata == NULL) {
+            //printf("NULL\n");
+            memcpy(response, "NULL\0", 5);
+        }
+        else{
+            respLen= strlen(retdata)+1;
+            retdata[MAX_MESSAGE_SIZE] = '\0';
+            memcpy(response, retdata, respLen);
+        }
+        send(socket, response,MAX_MESSAGE_SIZE, 0);
+        
         
         /*Check for the appropriate data center id*/
         dataCenterID = readIDFromDB(key);
         //if DC ID not found
         if (dataCenterID == -1)
             dataCenterID = myID;
-
+        
         /*Create new dependency*/
         dependency.key = key;
         dependency.lamportClockTime = myLamportClockTime;
@@ -203,7 +204,7 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
         data = (char*)malloc(sizeof(char)*dataLength);
         memcpy(data, request + offset, dataLength);
         if(DEBUG) printf("Data: %s\n", data);
-       
+        
         printf("WRITE(%s,%s)\n",key,data);
         /*time should be increased by 1 after a write*/
         myLamportClockTime=updateTime(myLamportClockTime);
@@ -240,44 +241,44 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
         
         
         /*Including the current dependency list in the message
-          Format:  LIST_SIZE [KEY_LENGTH KEY TIMESTAMP DATACENTER_ID] */
+         Format:  LIST_SIZE [KEY_LENGTH KEY TIMESTAMP DATACENTER_ID] */
         //LIST SIZE
         memcpy(request+offset,&clientDependenciesLists[clientID].count, sizeof(int));
         offset+=sizeof(int);
         for(i=0;i<clientDependenciesLists[clientID].count;i++)
         {
-          //Writing KEY_LENGTH
-          keyLength=strlen(clientDependenciesLists[clientID].list[i].key)+1;
-          memcpy(request+offset,&keyLength, sizeof(int));
-          offset+=sizeof(int);
-          //Writing KEY
-          memcpy(request+offset,clientDependenciesLists[clientID].list[i].key,keyLength);
-          offset+=keyLength;
-          //Writing Lamport Clock Time
-          memcpy(request+offset,&clientDependenciesLists[clientID].list[i].lamportClockTime, sizeof(int));
-          offset+=sizeof(int);
-          //Writing DATACENTER_ID
-          memcpy(request+offset,&clientDependenciesLists[clientID].list[i].dataCenterID, sizeof(int));
-          offset+=KEY_SIZE;
+            //Writing KEY_LENGTH
+            keyLength=strlen(clientDependenciesLists[clientID].list[i].key)+1;
+            memcpy(request+offset,&keyLength, sizeof(int));
+            offset+=sizeof(int);
+            //Writing KEY
+            memcpy(request+offset,clientDependenciesLists[clientID].list[i].key,keyLength);
+            offset+=keyLength;
+            //Writing Lamport Clock Time
+            memcpy(request+offset,&clientDependenciesLists[clientID].list[i].lamportClockTime, sizeof(int));
+            offset+=sizeof(int);
+            //Writing DATACENTER_ID
+            memcpy(request+offset,&clientDependenciesLists[clientID].list[i].dataCenterID, sizeof(int));
+            offset+=KEY_SIZE;
         }
-
-         //start test case
-         /*CREATING TEST CASE: the 4th replicated write will be delayed*/
-         resp = sendReplicatedWrite(ADDRESS, PORT_D1, request);
-         assert(resp == 1);
-         delayAfterThree++;
-
-         if (delayAfterThree == 3) {
-             usleep(microseconds);
-             resp = sendReplicatedWrite(ADDRESS, PORT_D2, request);
-         }
-         else
-             resp = sendReplicatedWrite(ADDRESS, PORT_D2, request);
-         assert(resp == 1);
-         delayAfterThree++;
-         /*TEST CASE IS NOT GENERAL...USE ONLY FOR PARTICULAR BEHAVIOUR TESTING*/
-         //end test case
-
+        
+        //start test case
+        /*CREATING TEST CASE: the 4th replicated write will be delayed*/
+        resp = sendReplicatedWrite(ADDRESS, PORT_D1, request);
+        assert(resp == 1);
+        delayAfterThree++;
+        
+        if (delayAfterThree == 3) {
+            usleep(microseconds);
+            resp = sendReplicatedWrite(ADDRESS, PORT_D2, request);
+        }
+        else
+            resp = sendReplicatedWrite(ADDRESS, PORT_D2, request);
+        assert(resp == 1);
+        delayAfterThree++;
+        /*TEST CASE IS NOT GENERAL...USE ONLY FOR PARTICULAR BEHAVIOUR TESTING*/
+        //end test case
+        
         /*clear dependency list and add this write*/
         printf("Clearing the dependency list after sending the replicated write request\n");
         clearDependencyList(clientID);
@@ -318,49 +319,49 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
         memcpy(&lamportClockTimeReceived,request + offset,sizeof(int));
         offset+=sizeof(int);
         if(DEBUG) printf("Lamport clock time received  %d\n",lamportClockTimeReceived);
-
+        
         printf("Replicated_Write(%s) received \n",key);
         
         memcpy(&replicatedDepList.count,request+offset,sizeof(int));
         offset+=sizeof(int);
         if(DEBUG) printf("DEP LIST SIZE %d\n",replicatedDepList.count);
-
+        
         printf("DEP LIST: ' ");
         for(i=0;i<replicatedDepList.count;i++)
         {
-          //KEY_LENGTH
-          memcpy(&keyLength,request+offset, sizeof(int));
-          offset+=sizeof(int);
-          if(DEBUG) printf("Key length %d\n", keyLength);
+            //KEY_LENGTH
+            memcpy(&keyLength,request+offset, sizeof(int));
+            offset+=sizeof(int);
+            if(DEBUG) printf("Key length %d\n", keyLength);
             
-          //KEY
-          replicatedDepList.list[i].key=(char*)malloc(sizeof(char)*keyLength);
-          memcpy(replicatedDepList.list[i].key,request+offset, keyLength);
-          offset+=keyLength;
-          if(DEBUG) printf("Key  %s\n", replicatedDepList.list[i].key);
-
-          //Lamport Clock Time
-          memcpy(&replicatedDepList.list[i].lamportClockTime,request+offset, sizeof(int));
-          offset+=sizeof(int);
-          if(DEBUG) printf("Lamport clock time received %d\n", replicatedDepList.list[i].lamportClockTime);
-
-          //DATACENTER_ID
-          memcpy(&replicatedDepList.list[i].dataCenterID,request+offset, sizeof(int));
-          offset+=KEY_SIZE;
-          if(DEBUG) printf("Data center ID %d\n", replicatedDepList.list[i].dataCenterID);
+            //KEY
+            replicatedDepList.list[i].key=(char*)malloc(sizeof(char)*keyLength);
+            memcpy(replicatedDepList.list[i].key,request+offset, keyLength);
+            offset+=keyLength;
+            if(DEBUG) printf("Key  %s\n", replicatedDepList.list[i].key);
             
-    printf("<%s,(%d,%d)>",replicatedDepList.list[i].key,replicatedDepList.list[i].lamportClockTime,replicatedDepList.list[i].dataCenterID);
+            //Lamport Clock Time
+            memcpy(&replicatedDepList.list[i].lamportClockTime,request+offset, sizeof(int));
+            offset+=sizeof(int);
+            if(DEBUG) printf("Lamport clock time received %d\n", replicatedDepList.list[i].lamportClockTime);
+            
+            //DATACENTER_ID
+            memcpy(&replicatedDepList.list[i].dataCenterID,request+offset, sizeof(int));
+            offset+=KEY_SIZE;
+            if(DEBUG) printf("Data center ID %d\n", replicatedDepList.list[i].dataCenterID);
+            
+            printf("<%s,(%d,%d)>",replicatedDepList.list[i].key,replicatedDepList.list[i].lamportClockTime,replicatedDepList.list[i].dataCenterID);
         }
         printf("' \n");
         if(DEBUG)printf("*******************REPLICATED WRITE ENDS******************\n");
-
+        
         
         /*Add operation*/
         replicatedDepList.operation.key=key;
         replicatedDepList.operation.data=data;
         replicatedDepList.operation.dataCenterID=dataCenterID;
-
-
+        
+        
         /*check for dependencies and commit the write if no dependecies*/
         flag = checkDependency(replicatedDepList);
         if (flag == 0) {
@@ -400,23 +401,23 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
 }
 
 /* We can listen to both clients and replicated writes here. What do you think?
-   In the slides he says when a datacenter needs to replicate writes it acts as a client
-   When the datacenter needs to send a replicated write it can fork a new thread */
+ In the slides he says when a datacenter needs to replicate writes it acts as a client
+ When the datacenter needs to send a replicated write it can fork a new thread */
 void listening()
 {
-
+    
     int flag = -1, i, max_sd, sd, activity, new_socket, response, n;
     fd_set readfds;
     char buffer[MAX_MESSAGE_SIZE] = { 0 };
     socklen_t addrlen = sizeof(serverAddress);
-
+    
     //Select implementation for multiple requests handling
     while (1)
     {
         FD_ZERO(&readfds);
         FD_SET(serverSocketFD, &readfds);
         max_sd = serverSocketFD;
-
+        
         for (i = 0; i < MAX_CLIENTS; i++)
         {
             //Socket descriptor
@@ -428,14 +429,14 @@ void listening()
             if (sd > max_sd)
                 max_sd = sd;
         }
-
+        
         activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
-
+        
         if ((activity < 0) && (errno != EINTR))
         {
             printf("Select error\n");
         }
-
+        
         //Incoming connection
         if (FD_ISSET(serverSocketFD, &readfds))
         {
@@ -444,10 +445,10 @@ void listening()
                 printf("Accept error\n");
                 exit(EXIT_FAILURE);
             }
-
+            
             //inform user of socket number - used in send and receive commands
             printf("New connection , socket fd is %d , ip is : %s , port : %d \n", new_socket, inet_ntoa(serverAddress.sin_addr), ntohs(serverAddress.sin_port));
-
+            
             //add new socket to array of sockets
             for (i = 0; i < MAX_CLIENTS; i++)
             {
@@ -460,7 +461,7 @@ void listening()
                 }
             }
         }
-
+        
         //check operation on the socket
         for (i = 0; i < MAX_CLIENTS; i++)
         {
@@ -474,12 +475,12 @@ void listening()
                     //peer disconnected
                     getpeername(sd, (struct sockaddr *)&clientAddress, &addrlen);
                     if (DEBUG) printf("Host disconnected , ip %s , port %d \n", inet_ntoa(clientAddress.sin_addr), ntohs(clientAddress.sin_port));
-
+                    
                     //Close the socket and mark as 0 in list for reuse
                     close(sd);
                     client_sock[i] = 0;
                 }
-
+                
                 //process the message that came in
                 else if (strcmp(buffer, "") != 0)
                 {
@@ -491,9 +492,9 @@ void listening()
                 }
             }
         }
-
+        
     }
-
+    
 }
 
 
@@ -501,7 +502,7 @@ void listening()
 int main(int argc, char** argv)
 {
     int flag = 0;
-   
+    
     if(argc==2)
     {
         PORT=atoi(argv[1]);
@@ -526,7 +527,7 @@ int main(int argc, char** argv)
         listening();
     }
     else
-         printf("Usage ./DataCenter PORT\n");
+        printf("Usage ./DataCenter PORT\n");
     return 1;
 }
 
