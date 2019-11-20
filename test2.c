@@ -123,7 +123,7 @@ int sendReplicatedWrite(char *address, int port, char *message)
 
 void messageHandler(char* request, char* clientIPAddress, int port, int socket)
 {
-    int offset = 0, keyLength, dataLength,i,resp=-1,flag=-1,lamportClockTimeReceived=-10;
+    int offset = 0, keyLength, dataLength,i,resp=-1,respLen,flag=-1,lamportClockTimeReceived=-10;
     int dataCenterID = -1;
     signed int clientID = -1;
     char* key, *data;
