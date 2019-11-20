@@ -353,7 +353,8 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
         flag = checkDependency(replicatedDepList);
         if (flag == 0) {
             //add to the pending queue
-            printf("Adding to pending queue\n");
+            printf("Dep check for Replicated_Write(%s) is not satisfied \n",key);
+            printf("Hence, adding to pending queue\n");
             assert(appendPendingQueue(replicatedDepList) == 1);
         }
         else {
@@ -380,7 +381,12 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
                     removeFromPendingQueue(i);
                     printf("Commiting to DB\n");
                     commit(pendingQueue[i].operation.key, -1, pendingQueue[i].operation.dataCenterID, pendingQueue[i].operation.data);
-                }				
+                }
+                else if(pendingQueue[i].count!=0)
+                {
+                    //Check dep failed
+                    printf("Replicated_Write(%s) dep check is not satisfied\n",pendingQueue[i].operation.key);
+                }
             }
         }
     }

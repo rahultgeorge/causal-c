@@ -50,7 +50,7 @@ int checkDependency(DependencyList replicatedDepList)
 		flag = 0;
 		for (j = 0; j < MAX_CLIENTS; j++) {
 			for (k = 0; k < clientDependenciesLists[j].count; k++) {
-                printf("%d %d\n",strlen(clientDependenciesLists[j].list[k].key),strlen(replicatedDepList.list[i].key));
+//                printf("%d %d\n",strlen(clientDependenciesLists[j].list[k].key),strlen(replicatedDepList.list[i].key));
 
 				if (strcmp(clientDependenciesLists[j].list[k].key, replicatedDepList.list[i].key) == 0
                     && clientDependenciesLists[j].list[k].lamportClockTime >= replicatedDepList.list[i].lamportClockTime){

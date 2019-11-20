@@ -9,6 +9,7 @@ int commit(char* key, int client_id,int center_id, void* data)
     char *zErrMsg = 0;
     
     int rc = sqlite3_open(DB_NAME, &db);
+    /*TODO Add updated logic */
     asprintf(&query, "insert into CausalTable (KEY, CLIENT_ID,CENTER_ID, VALUE) values ('%s',%d, %d,'%s');", key, client_id,center_id, ((char *)data));
     
     sqlite3_prepare_v2(db, query, strlen(query), &stmt, NULL);
