@@ -85,10 +85,14 @@ void initMulticastSocket(char* address,int port) {
 }
 
 
-int readFromDataStore(char* key)
+char* readFromDataStore(char* key)
 {
-    char* data = malloc(sizeof(char) * 20);
-    return readFromDB(key, (void*)data);
+	char* data = malloc(sizeof(char) * 20);
+	int i = readFromDB(key, (void*)data);
+	if (i != -1) {
+		return data;
+	}
+	return NULL;
 }
 
 void writeToDataStore(char* key, int clientID, char* data)
@@ -123,6 +127,7 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
     int dataCenterID = -1;
     signed int clientID = -1;
     char* key, *data;
+	char response[MAX_MESSAGE_SIZE];
     Dependency dependency;
     DependencyList replicatedDepList;
     printf("My lamport clock time : %d\n",myLamportClockTime);
@@ -146,9 +151,18 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
         if(DEBUG) printf("Key: %s\n", key);
 
         printf("READ(%s)\n",key);
-        //TODO: and respond to the client with the key value
+        //and respond to the client with the key value
         //read from DB
-        if(readFromDataStore(key)!=0) return; /*IF the read fails return*/
+		char* retdata = readFromDataStore(key);
+		int respLen = strlen(retdata);
+		retdata[respLen] = '\0';
+		if (retdata == NULL) {
+			memcpy(response, retdata, respLen);
+		}
+		else {
+			memcpy(response, retdata, respLen);
+		}
+		send(socket, response, strlen(response), 0);
 
         
         /*Check for the appropriate data center id*/

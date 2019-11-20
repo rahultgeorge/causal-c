@@ -88,6 +88,7 @@ char* readFromDataStore(char* key)
 {
 	char* data = malloc(sizeof(char) * 20);
 	int i = readFromDB(key, (void*)data);
+	//actually this should be taken care of in the readFromDB
 	if (i != -1) {
 		return data;
 	}
