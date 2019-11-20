@@ -65,11 +65,10 @@ int sendReadRequest(char* key)
 
     memcpy(request + offset, key, keyLength);
     offset += keyLength;
-
     send(socketFD, request, MAX_MESSAGE_SIZE, 0);
     /*Read the value*/
-    //read(socketFD,reply,MAX_MESSAGE_SIZE);
-    //printf("READ: %s\n",reply);
+    read(socketFD,reply,MAX_MESSAGE_SIZE);
+    printf("Value: %s\n",reply);
     return 0;
 }
 
