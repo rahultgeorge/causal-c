@@ -1,16 +1,48 @@
 #include "DBHandler.h"
 
 
-int commit(char* key, int client_id,int center_id, void* data)
+int commit(char* key, int client_id,int center_id, void* data, int clock)
 {
     sqlite3 *db;
     sqlite3_stmt *stmt;
     char* query;
     char *zErrMsg = 0;
+        char *err_msg = 0;
     
-    int rc = sqlite3_open(DB_NAME, &db);
+    int rc = sqlite3_open(DB_NAME, &db), oldClock;
+    
+    asprintf(&query, "SELECT CLOCK FROM CausalTable WHERE KEY ='%s';", key);
+    
+    sqlite3_prepare_v2(db, query, strlen(query), &stmt, NULL);
+    
+    rc = sqlite3_step(stmt);
+    
+    
+    if (rc == SQLITE_ROW)
+    {
+        printf("HI\n");
+        oldClock = sqlite3_column_int(stmt, 0);
+        printf("Read %d\n", oldClock);
+    }
+    
+    else if (rc != SQLITE_OK)
+    {
+        
+        fprintf(stderr, "Failed to select data\n");
+        fprintf(stderr, "SQL error: %s\n", err_msg);
+        
+        sqlite3_free(err_msg);
+        sqlite3_close(db);
+        
+    }
+    
+    sqlite3_finalize(stmt); 
+    
+       
+    
     /*TODO Add updated logic */
-    asprintf(&query, "insert into CausalTable (KEY, CLIENT_ID,CENTER_ID, VALUE) values ('%s',%d, %d,'%s');", key, client_id,center_id, ((char *)data));
+    if(clock>=oldClock){
+    asprintf(&query, "insert into CausalTable (KEY, CLIENT_ID,CENTER_ID, VALUE, CLOCK) values ('%s',%d, %d,'%s', %d);", key, client_id,center_id, ((char *)data), clock);
     
     sqlite3_prepare_v2(db, query, strlen(query), &stmt, NULL);
     
@@ -23,6 +55,7 @@ int commit(char* key, int client_id,int center_id, void* data)
     }
     
     sqlite3_finalize(stmt);
+    }
     free(query);
     return 0;
 }
@@ -140,7 +173,8 @@ int initDB()
     "KEY           CHAR(20)    NOT NULL," \
     "CLIENT_ID            INT     NOT NULL," \
     "CENTER_ID            INT     NOT NULL," \
-    "VALUE            VARCHAR(1000)     NOT NULL" \
+    "VALUE            VARCHAR(1000)     NOT NULL," \
+    "CLOCK		INT NOT NULL"\
     ");";
     
     

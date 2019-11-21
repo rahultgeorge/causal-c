@@ -95,10 +95,10 @@ char* readFromDataStore(char* key)
     return NULL;
 }
 
-void writeToDataStore(char* key, int clientID, char* data)
+void writeToDataStore(char* key, int clientID, char* data, int clock)
 {
     /*DO NULL CHECK*/
-    commit(key, clientID, myID, data);
+    commit(key, clientID, myID, data, clock);
 }
 
 /*Create a new thread which acts a client socket and sends the repliated write*/
@@ -211,7 +211,7 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
         
         /* Write committed to DB, now send REP_WRTITE to other data centers */
         //TODO: respond to the client with ACK (Why?)
-        writeToDataStore(key, clientID, data);
+        writeToDataStore(key, clientID, data, myLamportClockTime);
         
         /*Clear the request(?)*/
         /* HEADER KEY_LENGTH KEY DATA_LENGTH DATA DATACENTER_ID LAMPORT_CLOCK TIME DEPLIST */
@@ -360,6 +360,7 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
         replicatedDepList.operation.key=key;
         replicatedDepList.operation.data=data;
         replicatedDepList.operation.dataCenterID=dataCenterID;
+        replicatedDepList.operation.clock=lamportClockTimeReceived;
         
         
         /*check for dependencies and commit the write if no dependecies*/
@@ -379,9 +380,10 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
             replicatedWritesDepList.list[replicatedWriteCount]=dependency;
             replicatedWriteCount++;
             
-            commit(key,  -1,dataCenterID, data);
-            
             myLamportClockTime=max(myLamportClockTime,lamportClockTimeReceived);
+            commit(key,  -1,dataCenterID, data, myLamportClockTime);
+            
+            
             /*reissue dep check for all the keys in the pending queue*/
             //checkPendingQueue(key,myLamportClockTime,myID);
             printf("Checking pending queue\n");
@@ -392,7 +394,7 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
                     //printf("Removing from pending queue\n");
                     removeFromPendingQueue(i);
                     printf("Commiting to DB\n");
-                    commit(pendingQueue[i].operation.key, -1, pendingQueue[i].operation.dataCenterID, pendingQueue[i].operation.data);
+                    commit(pendingQueue[i].operation.key, -1, pendingQueue[i].operation.dataCenterID, pendingQueue[i].operation.data, pendingQueue[i].operation.clock);
                 }
             }
         }

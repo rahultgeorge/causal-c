@@ -9,7 +9,7 @@
 int initDB();
 
 /* Commits the write to the data store */
-int commit(char* key, int client_id, int center_id, void* data);
+int commit(char* key, int client_id, int center_id, void* data, int clock);
 
 /* Reads the value from the data store */
 int readFromDB(char* key, void* data);

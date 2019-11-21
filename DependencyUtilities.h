@@ -19,6 +19,7 @@ typedef struct Operation
     char* key;
     char* data;
     int dataCenterID;
+    int clock;
 }Operation;
 
 /* Create a list of dependency lists(MAX Clients)

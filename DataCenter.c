@@ -95,10 +95,10 @@ char* readFromDataStore(char* key)
     return NULL;
 }
 
-void writeToDataStore(char* key, int clientID, char* data)
+void writeToDataStore(char* key, int clientID, char* data, int clock)
 {
     /*DO NULL CHECK*/
-    commit(key, clientID, myID, data);
+    commit(key, clientID, myID, data, clock);
 }
 
 /*Create a new thread which acts a client socket and sends the repliated write*/
@@ -117,7 +117,6 @@ int sendReplicatedWrite(char *address, int port, char *message)
     assert(flag>0);
     //close(multiCastSocketFD);
     
-    /*TODO: check for response and then return*/
     return 1;
 }
 
@@ -134,6 +133,7 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
     /*READ REQUEST*/
     if (strncmp(request, READ_REQUEST, MESSAGE_HEADER_LENGTH) == 0)
     {
+        printf("\n Message received: %s \n", READ_REQUEST);
         offset += MESSAGE_HEADER_LENGTH;
         //reading client ID
         memcpy(&clientID, request + offset, sizeof(int));
@@ -181,6 +181,7 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
     /*WRITE REQUEST*/
     else if (strncmp(request, WRITE_REQUEST, MESSAGE_HEADER_LENGTH) == 0)
     {
+        printf("\n Message received: %s \n", WRITE_REQUEST);
         offset += MESSAGE_HEADER_LENGTH;
         //Reading the clientID
         memcpy(&clientID, request + offset, sizeof(int));
@@ -209,8 +210,8 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
         myLamportClockTime=updateTime(myLamportClockTime);
         
         /* Write committed to DB, now send REP_WRTITE to other data centers */
-        //TODO: respond to the client with ACK (Why?)
-        writeToDataStore(key, clientID, data);
+        //TODO:respond to the client with ACK (Why?)
+        writeToDataStore(key, clientID, data, myLamportClockTime);
         
         /*Clear the request(?)*/
         /* HEADER KEY_LENGTH KEY DATA_LENGTH DATA DATACENTER_ID LAMPORT_CLOCK TIME DEPLIST */
@@ -278,6 +279,7 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
     /*REPLICATED WRITE */
     else if (strncmp(request, REP_WRITE, MESSAGE_HEADER_LENGTH) == 0)
     {
+        printf("\n Message received: %s \n", REP_WRITE);
         if(DEBUG)printf("**********************REPLICATED WRITE***************\n");
         offset += MESSAGE_HEADER_LENGTH;
         //Reading the key length
@@ -347,6 +349,7 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
         replicatedDepList.operation.key=key;
         replicatedDepList.operation.data=data;
         replicatedDepList.operation.dataCenterID=dataCenterID;
+        replicatedDepList.operation.clock=lamportClockTimeReceived;
         
         
         /*check for dependencies and commit the write if no dependecies*/
@@ -367,9 +370,11 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
             replicatedWritesDepList.list[replicatedWriteCount]=dependency;
             replicatedWriteCount++;
             
-            commit(key,  -1,dataCenterID, data);
-            
             myLamportClockTime=max(myLamportClockTime,lamportClockTimeReceived);
+            
+            commit(key,  -1,dataCenterID, data, myLamportClockTime);
+            
+            
             /*reissue dep check for all the keys in the pending queue*/
             //checkPendingQueue(key,myLamportClockTime,myID);
             printf("Checking pending queue\n");
@@ -380,7 +385,8 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
                     //printf("Removing from pending queue\n");
                     removeFromPendingQueue(i);
                     printf("Commiting to DB\n");
-                    commit(pendingQueue[i].operation.key, -1, pendingQueue[i].operation.dataCenterID, pendingQueue[i].operation.data);
+                    //find the clock time for this
+                    commit(pendingQueue[i].operation.key, -1, pendingQueue[i].operation.dataCenterID, pendingQueue[i].operation.data, pendingQueue[i].operation.clock);
                 }
                 else if(pendingQueue[i].count!=0)
                 {
@@ -479,7 +485,7 @@ void listening()
                     //terminate string with NULL  
                     //buffer[n] = '\0';
                     //handle the message
-                    printf("\n Message received: %s \n", buffer);
+                    //printf("\n Message received: %s \n", buffer);
                     messageHandler(buffer, inet_ntoa(clientAddress.sin_addr), ntohs(clientAddress.sin_port), client_sock[i]);
                 }
             }
@@ -490,7 +496,7 @@ void listening()
 }
 
 
-/*TODO -  We can switch to epoll  if we get the time. What do you think? NAAAAAAAAAAH....we have better things to do*/
+
 int main(int argc, char** argv)
 {
     int flag = 0;
