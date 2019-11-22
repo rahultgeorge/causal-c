@@ -28,15 +28,16 @@ int commit(char* key, int client_id, int center_id, void* data, int clock)
 	else if (rc != SQLITE_OK)
 	{
 
-		fprintf(stderr, "Failed to select data\n");
-		fprintf(stderr, "SQL error: %s\n", err_msg);
+		//fprintf(stderr, "Failed to select data\n");
+		//fprintf(stderr, "SQL error: %s\n", err_msg);
 
-		sqlite3_free(err_msg);
-		sqlite3_close(db);
+		//sqlite3_free(err_msg);
+		//sqlite3_close(db);
+		oldClock=clock;
 
 	}
 
-	sqlite3_finalize(stmt);
+	//sqlite3_finalize(stmt);
 
 
 
