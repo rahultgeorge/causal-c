@@ -20,7 +20,6 @@ int commit(char* key, int client_id, int center_id, void* data, int clock)
 
 	if (rc == SQLITE_ROW)
 	{
-		printf("HI\n");
 		oldClock = sqlite3_column_int(stmt, 0);
 		printf("Read %d\n", oldClock);
 	}
@@ -32,7 +31,7 @@ int commit(char* key, int client_id, int center_id, void* data, int clock)
 		fprintf(stderr, "SQL error: %s\n", err_msg);
 
 		sqlite3_free(err_msg);
-		sqlite3_close(db);
+		//sqlite3_close(db);
 
 	}
 
@@ -56,6 +55,7 @@ int commit(char* key, int client_id, int center_id, void* data, int clock)
 
 		sqlite3_finalize(stmt);
 	}
+	sqlite3_close(db);
 	free(query);
 	return 0;
 }
