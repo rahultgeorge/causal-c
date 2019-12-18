@@ -401,8 +401,8 @@ void messageHandler(char* request, char* clientIPAddress, int port, int socket)
 }
 
 /* We can listen to both clients and replicated writes here. What do you think?
- In the slides he says when a datacenter needs to replicate writes it acts as a client
- When the datacenter needs to send a replicated write it can fork a new thread */
+   In the slides he says when a datacenter needs to replicate writes it acts as a client
+   When the datacenter needs to send a replicated write it can fork a new thread */
 void listening()
 {
 
@@ -501,7 +501,23 @@ void listening()
 int main(int argc, char** argv)
 {
 	int flag = 0;
-
+    
+    /* Double fork magic - To make a true daemon (Prevents the forked process froma accquiring a terminal) */
+    int rc=fork();
+    assert(rc>=0);
+    if(rc>0)
+    {
+    	exit(1);
+    }
+    else if(rc==0)
+    {
+    	setsid(); 
+    	rc=fork();
+    	if(rc>0)
+    		exit(1);
+    }
+ 
+    
 	if (argc == 2)
 	{
 		PORT = atoi(argv[1]);
